@@ -234,7 +234,7 @@ private:
     }
     std::string labelText = "Button";
     sf::Text label;
-    sf::Font font = AssetManager::get().getFont("assets/fonts/arial.ttf");
+    sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
     sf::Color textColor = sf::Color::Black;
     float e_outlineThickness = 2.f;
     sf::Color e_outlinecolor = sf::Color::Black;

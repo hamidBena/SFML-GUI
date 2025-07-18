@@ -82,7 +82,7 @@ int main() {
 
 	auto player_pos_label = UI.CreateLabel();
 	player_pos_label->setOffset({0, 100})
-	.setDecimal(-1)
+	.setDecimal(2)
 	.setOnTick([&playerPos, &player_pos_label](float dt){
 		player_pos_label->setText("player pos: " + std::to_string(playerPos.x) + ", " + std::to_string(playerPos.y) + " baby");
 		

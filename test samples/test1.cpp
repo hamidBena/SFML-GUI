@@ -34,15 +34,7 @@ int main() {
 
 	auto Label1 = UI.CreateLabel();
 	Label1->setOffset({0, 0})
-		   .setSize({200, 50})
-		   .setFillColor({250,250,250,100})
-		   .setLayoutType(LayoutType::Relative)
-		   .setSizeType(SizeType::FitContent)
-		   .setTextSize(24)
-		   .setTextColor(sf::Color::Black)
-		   .setPadding({5, 2})
-		   .setFont(AssetManager::get().getFont("assets/fonts/arial.ttf"))
-		   .setText("Hello World!\nthis is a label");
+	.setText("hello people\nthis is my label!");
 
 	auto InputField = UI.CreateTextField();
 	InputField->setOffset({0, 150})
@@ -81,6 +73,8 @@ int main() {
 	Menu1->AddChild(Label1);
 	Menu1->AddChild(InputField);
 	Menu1->AddChild(Slider1);
+
+	UI.RefreshLayout();
 
 	sf::Clock clock;
 

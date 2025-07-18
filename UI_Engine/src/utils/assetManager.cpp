@@ -1,5 +1,18 @@
 #include "utils/assetManager.hpp"
-#include <stdexcept>
+#include <iostream>
+// Locate assets/ at static init time
+fs::path AssetManager::asset_dir = [] {
+    fs::path current = env::exe_dir();
+    while (!current.empty()) {
+        fs::path try_path = current / "assets";
+        if (fs::exists(try_path) && fs::is_directory(try_path)) {
+			std::cout <<try_path << '\n';
+            return try_path;
+        }
+        current = current.parent_path();
+    }
+    throw std::runtime_error("Could not locate 'assets/' directory.");
+}();
 
 AssetManager& AssetManager::get() {
     static AssetManager instance;
@@ -13,8 +26,8 @@ sf::Texture& AssetManager::getTexture(const std::string& filename) {
     }
 
     auto texture = std::make_unique<sf::Texture>();
-    if (!texture->loadFromFile(filename)) {
-        throw std::runtime_error("AssetManager: Failed to load texture: " + filename);
+    if (!texture->loadFromFile((asset_dir / filename).string())) {
+        throw std::runtime_error("Failed to load texture: " + filename);
     }
 
     sf::Texture& ref = *texture;
@@ -29,8 +42,8 @@ sf::Font& AssetManager::getFont(const std::string& filename) {
     }
 
     auto font = std::make_unique<sf::Font>();
-    if (!font->loadFromFile(filename)) {
-        throw std::runtime_error("AssetManager: Failed to load font: " + filename);
+    if (!font->loadFromFile((asset_dir / filename).string())) {
+        throw std::runtime_error("Failed to load font: " + filename);
     }
 
     sf::Font& ref = *font;

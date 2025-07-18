@@ -4,38 +4,48 @@ project(UILibrary)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Force SFML to build as static
+# Enable interprocedural optimization (LTO)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
+# Set static MSVC runtime for Debug and Release
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+    add_definitions(-DNOMINMAX)
+endif()
+
+# Force SFML to build statically
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build SFML as static libraries" FORCE)
+
+# Extract SFML zip archive if not already extracted
+set(SFML_ZIP_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/SFML-2.6.1.rar")
+set(SFML_EXTRACT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/SFML-2.6.1")
+
+if(NOT EXISTS "${SFML_EXTRACT_DIR}/CMakeLists.txt")
+    message(STATUS "Extracting SFML from zip...")
+    file(ARCHIVE_EXTRACT INPUT "${SFML_ZIP_PATH}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
+endif()
+
 
 # Add SFML from thirdparty folder
 add_subdirectory(thirdparty/SFML-2.6.1)
 
-# Enable link-time optimization
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-
-# Set MSVC runtime flags if using MSVC
-if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
-
 # Collect UI_Engine source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS UI_Engine/src/*.cpp)
 
-# Build UILibrary as static
+# Build UILibrary as static library
 add_library(UILibrary STATIC ${SOURCES})
 
-# Define headers
+# Include paths for UILibrary
 target_include_directories(UILibrary PUBLIC
     ${PROJECT_SOURCE_DIR}/UI_Engine/header
     ${PROJECT_SOURCE_DIR}/UI_Engine/widgets
     ${PROJECT_SOURCE_DIR}/thirdparty/SFML-2.6.1/include
 )
 
-# Define SFML_STATIC for proper linkage
+# Define SFML_STATIC for correct linkage
 target_compile_definitions(UILibrary PUBLIC SFML_STATIC)
 
-# Link all required SFML components and dependencies
+# Link required SFML libraries
 target_link_libraries(UILibrary
     sfml-graphics
     sfml-window
@@ -43,18 +53,10 @@ target_link_libraries(UILibrary
     sfml-audio
 )
 
-# Collect test sample source files
+# Collect test sample files
 file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "test samples/*.cpp")
 
-# Copy the assets directory to the build directory root
-add_custom_target(copy_assets ALL
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-	"${CMAKE_SOURCE_DIR}/assets"
-	"${CMAKE_BINARY_DIR}/assets"
-)
-
-
-# Generate a test executable for each sample
+# Build each test sample as separate executable
 foreach(test_src IN LISTS TEST_SOURCES)
     get_filename_component(test_name ${test_src} NAME_WE)
 
@@ -76,7 +78,4 @@ foreach(test_src IN LISTS TEST_SOURCES)
         sfml-audio
     )
 
-	add_dependencies(${test_name} copy_assets)
-
 endforeach()
-

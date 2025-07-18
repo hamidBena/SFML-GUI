@@ -60,7 +60,6 @@ public:
     }
     UILabel& setFont(const sf::Font& f) {
         font = f;
-        text.setFont(f);
         CalculateLayout();
         return *this;
     }
@@ -187,7 +186,7 @@ public:
 private:
     std::string labelText = "Label";
     sf::Text text;
-    sf::Font font = AssetManager::get().getFont("assets/fonts/arial.ttf");
+    sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
     sf::Color textColor = sf::Color::Black;
     unsigned int textSize = 18;
 	unsigned int decimals = 2;

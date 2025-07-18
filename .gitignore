@@ -29,9 +29,7 @@ Thumbs.db
 # --- Third-party -----------------------------------------------------
 # You want the *source* of SFML to stay in the repo so anyone can build
 # against it, but you don’t want intermediate build files it might drop.
-thirdparty/SFML/build/
-thirdparty/SFML/CMakeCache.txt
-thirdparty/SFML/CMakeFiles/
+thirdparty/SFML-2.6.1/
 
 # --- Test samples ----------------------------------------------------
 # Keep the .cpp/.hpp templates themselves, but ignore any executables

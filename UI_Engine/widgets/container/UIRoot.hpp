@@ -221,7 +221,7 @@ private:
     std::string headerTitle = "";
     sf::Color headerColor = sf::Color(60, 60, 60);
     float headerHeight = 30.f;
-    sf::Font font = AssetManager::get().getFont("assets/fonts/arial.ttf");
+    sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
 
     // --- Dragging state ---
     bool dragging = false;

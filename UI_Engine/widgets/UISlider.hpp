@@ -147,7 +147,7 @@ private:
     bool hovered = false;
     sf::Color borderColor = sf::Color::Black;
     float borderThickness = 2.f;
-    sf::Font font = AssetManager::get().getFont("assets/fonts/arial.ttf");
+    sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
     sf::Color textColor = sf::Color::Black;
     unsigned int textSize = 18;
     std::function<void(float)> onChange;
