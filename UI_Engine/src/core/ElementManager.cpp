@@ -69,7 +69,13 @@ std::shared_ptr<UIElement> GUI::FindElementRecursive(const std::shared_ptr<UIEle
 }
 
 void GUI::draw(sf::RenderTarget& target, sf::RenderStates states){
+	sf::View oldView = target.getView();
+    // Set to default view (screen-space)	
+	target.setView(target.getDefaultView());
+
 	for(auto& root : UIRoots) root->Render(target, states);
+	// Restore the previous view (world-space)
+    target.setView(oldView);
 }
 
 void GUI::HandleEvent(const UIEvent& event) {
@@ -80,6 +86,7 @@ void GUI::HandleEvent(const UIEvent& event) {
 
 void GUI::Update(const float dt) {
 	for (auto& root : UIRoots) {
+		while(root->layoutDirty) root->CalculateLayout();
 		root->Update(dt);
 	}
 }
@@ -96,9 +103,15 @@ void GUI::ProcessEvent(const sf::Event& event) {
         HandleEvent(uievt);
     } else if (event.type == sf::Event::KeyPressed) {
         UIEvent uievt{UIEventType::KeyDown, sf::Vector2f(0, 0), 0, event.key.code};
+		uievt.ctrl  = event.key.control;
+		uievt.shift = event.key.shift;
+		uievt.alt   = event.key.alt;
         HandleEvent(uievt);
     } else if (event.type == sf::Event::KeyReleased) {
         UIEvent uievt{UIEventType::KeyUp, sf::Vector2f(0, 0), 0, event.key.code};
+		uievt.ctrl  = event.key.control;
+		uievt.shift = event.key.shift;
+		uievt.alt   = event.key.alt;
         HandleEvent(uievt);
     } else if (event.type == sf::Event::TextEntered) {
         if (event.text.unicode >= 32 && event.text.unicode < 127) {

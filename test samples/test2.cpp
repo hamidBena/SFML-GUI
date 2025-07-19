@@ -8,8 +8,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(2000, 1200), "SFML Example");
 	window.setFramerateLimit(100);
 
-	float counter = 10;
-	std::string counter_string;
+	float counter;
 
 	GUI UI;
 	auto Menu1 = UI.CreateRoot();
@@ -34,17 +33,6 @@ int main() {
 		   .setHeaderColor(sf::Color(200, 200, 200, 150))
 		   .setSpacing(50.f);
 
-	auto InputField = UI.CreateTextField();
-	InputField->setSizeType(SizeType::Absolute)
-				.setPlaceholder("name here...")
-				.setPlaceholderColor(sf::Color(100, 100, 100))
-				.setBoundValue(&counter_string)
-				.setOnChange([&counter](const std::string& value) {
-					try{
-						counter = std::stof(value);
-					} catch (const std::invalid_argument&){}
-				});
-
 	auto Slider1 = UI.CreateSlider();
 	Slider1->setSize({170, 40})
 		   .setRange(0.f, 50.f)
@@ -53,12 +41,8 @@ int main() {
 		   .setFillColor({100, 100, 50, 255})
 		   .setBoundValue(&counter);
 
-	// Add the elements to the Menu
-	Menu1->AddChild(List1);	//size and position errors may appear when adding the parent before linking its children
-	List1->AddChild(InputField);
+	Menu1->AddChild(List1);
 	List1->AddChild(Slider1);
-
-	
 
 	auto List2 = UI.CreateList();
 	List2->setOffset({0, 30})
@@ -75,34 +59,34 @@ int main() {
 	auto Button1 = UI.CreateButton();
 	Button1->setFillColor({150,250,50,200})
 		   .setLabel("Increment")
-		   .setOnClick([&counter, &counter_string, &UI, &List2](){
+		   .setOnClick([&counter, &List2](){
 			counter+= 5;
-			counter_string = std::to_string(counter);
 			List2->setSpacing(counter);
-			UI.RefreshLayout();
 		   });
 
 	auto Button2 = UI.CreateButton();
 	Button2->setFillColor({255,80,50,200})
 		   .setLabel("Decrement")
-		   .setOnClick([&counter, &counter_string, &UI, &List2](){
+		   .setOnClick([&counter, &List2](){
 			counter-= 5;
-			counter_string = std::to_string(counter);
 			List2->setSpacing(counter);
-			UI.RefreshLayout();
 		   });
 
 	auto Button3 = UI.CreateButton();
 	Button3->setFillColor({250,250,50,200})
-		   .setLabel("update")
-		   .setOnClick([&counter, &List2, &UI](){
+		   .setLabel("reset")
+		   .setOnClick([&counter, &List2](){
+			counter = 10;
 			List2->setSpacing(counter);
-			UI.RefreshLayout();
 		   });
 
 	List2->AddChild(Button1);
 	List2->AddChild(Button2);
 	List2->AddChild(Button3);
+
+	Slider1->setOnChange([&List2](float value){
+		List2->setSpacing(value);
+	});
 
 	auto Menu2 = UI.CreateRoot();
 	Menu2->setOffset({200, 100})
@@ -113,17 +97,6 @@ int main() {
 		   .setSizeType(SizeType::FitContent)
 		   .setHeaderTitle("second Menu");
 	Menu2->AddChild(List2);
-
-	InputField->setOnEnter([&Menu2, &UI](const std::string& value) {
-		if(value == "On") Menu2->setEnable(true);
-		else if(value == "Off") Menu2->setEnable(false);
-		else if(value == "Toggle") {
-			Menu2->setEnable(!Menu2->enabled);
-		}
-		UI.RefreshLayout();
-	});
-
-	UI.RefreshLayout();	//new function to ensure layout is correctly placed
 
 	sf::Clock clock;
 

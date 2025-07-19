@@ -11,37 +11,35 @@ public:
     // Builder setters
     UIList& setOffset(const sf::Vector2f& pos) {
         e_offset = pos;
-		CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UIList& setSize(const sf::Vector2f& size) {
         e_size = size;
-		CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UIList& setFillColor(const sf::Color& color) {
         e_fillcolor = color;
-		CalculateLayout();
         return *this;
     }
     UIList& setAnchor(LayoutAnchor anch) {
         anchor = anch;
-		CalculateLayout();
         return *this;
     }
     UIList& setLayoutType(LayoutType type) {
         layoutType = type;
-		CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
 	UIList& setSizeType(SizeType type) {
 		sizeType = type;
-		CalculateLayout();
+		markLayoutDirty();
 		return *this;
 	}
 	UIList& setPadding(const sf::Vector2f& pad) {
 		e_padding = pad;
-		CalculateLayout();
+		markLayoutDirty();
 		return *this;
 	}
 	UIList& setHeaderTitle(const std::string& title) {
@@ -54,6 +52,7 @@ public:
     }
     UIList& setHeaderHeight(float height) {
         headerHeight = height;
+		markLayoutDirty();
         return *this;
     }
 
@@ -69,6 +68,7 @@ public:
 
 	UIList& setSpacing(float space) {
 		spacing = space;
+		markLayoutDirty();
 		return *this;
 	}
 
@@ -84,8 +84,6 @@ public:
 
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
 		if(!visible) return;
-
-		auto e_position = interpolated_position.getValue();
 
         // main background
         sf::RectangleShape rect(e_size);
@@ -116,9 +114,22 @@ public:
             headerText.setPosition(e_position.x + 10, (e_position.y - headerHeight) + (headerHeight - headerText.getLocalBounds().height) / 2.f - headerText.getLocalBounds().top);
             target.draw(headerText, states);
         }
+
+		if (layoutDirty) {
+			sf::ConvexShape triangle;
+			triangle.setPointCount(3);
+			triangle.setPoint(0, e_position);
+			triangle.setPoint(1, e_position + sf::Vector2f(10, 0));
+			triangle.setPoint(2, e_position + sf::Vector2f(0, 10));
+			triangle.setFillColor(sf::Color::Red);
+			target.draw(triangle, states);
+		}
     }
 
     void CalculateLayout() override {
+		if(!layoutDirty) return;
+		layoutDirty = false;
+
         if(layoutType == LayoutType::Static) {
             e_position = e_offset;
         } else if(layoutType == LayoutType::Relative) {
@@ -139,17 +150,11 @@ public:
 
 		interpolated_position = e_position;
 
-	// Size calculation:
-	// - FitContent: Calculate children layout first, then determine self size.
-	// - Others: Determine self size first, then position children.
-
 		float currentY;
         if (sizeType == SizeType::FitContent) {
-
 			currentY = e_position.y + e_padding.y;
 			for (auto& child : children) {
 				child->CalculateLayout();
-
 				child->e_position.y = currentY;
 				currentY += child->e_size.y + spacing; // Stack children vertically with spacing
 			}
@@ -161,7 +166,6 @@ public:
                 maxSize.y = std::max(maxSize.y, childBR.y);
             }
             e_size = maxSize + e_padding * 2.f;
-			return;	//------------------------------------	return
         } else if (sizeType == SizeType::FillParent) {
             if (auto parentPtr = parent.lock()) {
                 e_size = parentPtr->e_size-parentPtr->e_padding*2.f - e_offset;
@@ -186,13 +190,7 @@ public:
     UIElement* AddChild(std::shared_ptr<UIElement> child) override {
         children.push_back(child);
         child->parent = shared_from_this();
-
-		if(sizeType == SizeType::FitContent) {
-			CalculateLayout();
-		}else{
-			child->CalculateLayout();
-		}
-
+		markLayoutDirty();
         return child.get();
     }
 

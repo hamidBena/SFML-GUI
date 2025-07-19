@@ -54,6 +54,6 @@ public:
 
 private:
     std::vector<std::shared_ptr<UIRoot>> UIRoots;
-
+	
     std::shared_ptr<UIElement> FindElementRecursive(const std::shared_ptr<UIElement>& element, const std::string& name);
 };

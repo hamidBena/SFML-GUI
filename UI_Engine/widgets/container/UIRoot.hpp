@@ -11,38 +11,36 @@ public:
     // Builder setters
     UIRoot& setOffset(const sf::Vector2f& pos) {
         e_offset = pos;
-		CalculateLayout();
 		interpolated_position = pos;
+		markLayoutDirty();
         return *this;
     }
     UIRoot& setSize(const sf::Vector2f& size) {
         e_size = size;
-		CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UIRoot& setFillColor(const sf::Color& color) {
         e_fillcolor = color;
-		CalculateLayout();
         return *this;
     }
     UIRoot& setAnchor(LayoutAnchor anch) {
         anchor = anch;
-		CalculateLayout();
         return *this;
     }
     UIRoot& setLayoutType(LayoutType type) {
         layoutType = type;
-		CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
 	UIRoot& setSizeType(SizeType type) {
 		sizeType = type;
-		CalculateLayout();
+		markLayoutDirty();
 		return *this;
 	}
 	UIRoot& setPadding(const sf::Vector2f& pad) {
 		e_padding = pad;
-		CalculateLayout();
+		markLayoutDirty();
 		return *this;
 	}
 	UIRoot& setHeaderTitle(const std::string& title) {
@@ -55,6 +53,7 @@ public:
     }
     UIRoot& setHeaderHeight(float height) {
         headerHeight = height;
+		markLayoutDirty();
         return *this;
     }
 	UIRoot& setEnable(bool en) {
@@ -78,7 +77,6 @@ public:
 
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
 		if(!visible) return;
-
 		//auto e_position = interpolated_position.getValue();	//testing interpolation
 
         // main background (root body)
@@ -110,10 +108,23 @@ public:
             headerText.setPosition(e_position.x + 10, (e_position.y - headerHeight) + (headerHeight - headerText.getLocalBounds().height) / 2.f - headerText.getLocalBounds().top);
             target.draw(headerText, states);
         }
+		
+		if (layoutDirty) {
+			sf::ConvexShape triangle;
+			triangle.setPointCount(3);
+			triangle.setPoint(0, e_position);
+			triangle.setPoint(1, e_position + sf::Vector2f(10, 0));
+			triangle.setPoint(2, e_position + sf::Vector2f(0, 10));
+			triangle.setFillColor(sf::Color::Red);
+			target.draw(triangle, states);
+		}
     }
 
     void CalculateLayout() override {
 		if (!enabled) return;
+
+		if(!layoutDirty) return;
+		layoutDirty = false;
 
 		// position calculations
 		switch (layoutType) {
@@ -144,23 +155,20 @@ public:
 			case SizeType::FitContent: {
 				sf::Vector2f maxSize(0, 0);
 				for (const auto& child : children) {
-					if (!child->enabled) continue;
 					child->CalculateLayout();
 					sf::Vector2f childBR = child->e_position + child->e_size - e_position;
 					maxSize.x = std::max(maxSize.x, childBR.x);
 					maxSize.y = std::max(maxSize.y, childBR.y);
 				}
 				e_size = maxSize + e_padding * 2.f;
-				return;
+				break;
 			}
-
 			case SizeType::FillParent: {
 				if (auto parentPtr = parent.lock()) {
 					e_size = parentPtr->e_size - parentPtr->e_padding / 0.5f - e_offset;
 				}
 				break;
 			}
-
 			case SizeType::Percent: {
 				if (auto parentPtr = parent.lock()) {
 					auto parentArea = parentPtr->e_size - parentPtr->e_padding / 0.5f;
@@ -169,7 +177,6 @@ public:
 				}
 				break;
 			}
-
 			case SizeType::Absolute:
 				break;
 		}
@@ -182,14 +189,7 @@ public:
     UIElement* AddChild(std::shared_ptr<UIElement> child) override {
         children.push_back(child);
         child->parent = shared_from_this();
-
-		if(sizeType == SizeType::FitContent) {
-			// Fit content logic: recalculate size based on new child
-			CalculateLayout();
-		}else{
-			child->CalculateLayout();
-		}
-
+		markLayoutDirty();
         return child.get();
     }
 
@@ -209,6 +209,7 @@ public:
                 dragging = false;
             } else if (event.type == UIEventType::MouseMove && dragging) {
                 setOffset(event.mousePos - dragOffset);
+				markChildrenDirty();
                 return;
             }
         }

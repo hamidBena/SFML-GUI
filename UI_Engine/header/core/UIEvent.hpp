@@ -19,4 +19,8 @@ struct UIEvent {
     int mouseButton = 0; // 0=left, 1=right.
     int key = 0;         // Key code for keyboard events
     char textChar = 0;   // Character for text input events
+
+	bool ctrl  = false;
+    bool shift = false;
+    bool alt   = false;
 };

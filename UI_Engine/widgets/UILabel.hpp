@@ -13,37 +13,36 @@ public:
     // --- Standard builder-style setters ---
     UILabel& setOffset(const sf::Vector2f& pos) {
         e_offset = pos;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UILabel& setSize(const sf::Vector2f& size) {
         e_size = size;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UILabel& setFillColor(const sf::Color& color) {
         e_fillcolor = color;
-        CalculateLayout();
         return *this;
     }
     UILabel& setAnchor(LayoutAnchor anch) {
         anchor = anch;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UILabel& setLayoutType(LayoutType type) {
         layoutType = type;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UILabel& setSizeType(SizeType type) {
         sizeType = type;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UILabel& setPadding(const sf::Vector2f& pad) {
         e_padding = pad;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UILabel& setBorder(float thickness, const sf::Color& color) {
@@ -55,18 +54,15 @@ public:
     UILabel& setText(const std::string& str) {
         text.setString(str);
         labelText = str;
-        CalculateLayout();
         return *this;
     }
     UILabel& setFont(const sf::Font& f) {
         font = f;
-        CalculateLayout();
         return *this;
     }
     UILabel& setTextSize(unsigned int size) {
         textSize = size;
         text.setCharacterSize(size);
-        CalculateLayout();
         return *this;
     }
     UILabel& setTextColor(const sf::Color& color) {

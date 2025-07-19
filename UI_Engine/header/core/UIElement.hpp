@@ -37,6 +37,8 @@ public:
     float borderThickness = 2.f;
     sf::Color borderColor = sf::Color::Black;
 
+	bool layoutDirty = true;
+
     UIElement(const std::string& id);
 
 	sf::Vector2f getSize(){return e_size;}
@@ -50,24 +52,20 @@ public:
     virtual void HandleEvent(const UIEvent& event) {};	// default empty event handler but may be overridden by derived classes
     virtual ~UIElement() {}
 
+	void markLayoutDirty() {
+		layoutDirty = true;
+
+		if (auto parentPtr = parent.lock()) {
+			parentPtr->markLayoutDirty();
+		}
+	}
+
 protected:
     static std::string defaultName() {
         return std::to_string(UIElement::ElementCount);
-    }
+	}
 
 	Interpolated<sf::Vector2f> interpolated_position;
-};
-
-// Container type: can have children and manages layout
-class UIContainer : public UIElement {
-public:
-    std::vector<std::shared_ptr<UIElement>> children;
-    float spacing = 0.f;
-
-    UIContainer(const std::string& id);
-    UIElement* AddChild(std::shared_ptr<UIElement> child) override;
-    void Render(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) override;
-    void HandleEvent(const UIEvent& event) override;
 };
 
 // Leaf type: cannot have children, only draws itself
@@ -83,4 +81,27 @@ public:
     }
 	
     void HandleEvent(const UIEvent& event) override {};
+};
+
+// Container type: can have children and manages layout
+class UIContainer : public UIElement {
+public:
+    std::vector<std::shared_ptr<UIElement>> children;
+    float spacing = 0.f;
+
+    UIContainer(const std::string& id);
+    UIElement* AddChild(std::shared_ptr<UIElement> child) override;
+    void Render(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) override;
+    void HandleEvent(const UIEvent& event) override;
+
+	void markChildrenDirty(){
+		layoutDirty = true;
+		for (auto& child : children) {
+			if (auto leaf = dynamic_cast<UILeaf*>(child.get())) {
+				leaf->layoutDirty = true;
+			} else if (auto container = dynamic_cast<UIContainer*>(child.get())) {
+				container->markChildrenDirty();
+			}
+		}
+	}
 };

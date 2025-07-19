@@ -11,17 +11,10 @@ UIContainer::UIContainer(const std::string& id)
 void UIContainer::Render(sf::RenderTarget& target, sf::RenderStates states) {
 	if(!enabled) return;
 
-	sf::View oldView = target.getView();
-    // Set to default view (screen-space)	
-	target.setView(target.getDefaultView());
-
     DrawSelf(target, states);
     for (const auto& child : children) {
         child->Render(target, states);
     }
-
-	// Restore the previous view (world-space)
-    target.setView(oldView);
 }
 
 UIElement* UIContainer::AddChild(std::shared_ptr<UIElement> child) {

@@ -11,18 +11,18 @@ public:
 	std::string *boundValue = nullptr;
 
     // --- Standard setters
-    UITextField& setOffset(const sf::Vector2f& pos) { e_offset = pos; CalculateLayout(); return *this; }
-    UITextField& setSize(const sf::Vector2f& size) { e_size = size; CalculateLayout(); return *this; }
-    UITextField& setFillColor(const sf::Color& color) { e_fillcolor = color; CalculateLayout(); return *this; }
-    UITextField& setAnchor(LayoutAnchor anch) { anchor = anch; CalculateLayout(); return *this; }
-    UITextField& setLayoutType(LayoutType type) { layoutType = type; CalculateLayout(); return *this; }
-    UITextField& setSizeType(SizeType type) { sizeType = type; CalculateLayout(); return *this; }
-    UITextField& setPadding(const sf::Vector2f& pad) { e_padding = pad; CalculateLayout(); return *this; }
-    UITextField& setBorder(float thickness, const sf::Color& color) { borderThickness = thickness; borderColor = color; CalculateLayout(); return *this; }
-    UITextField& setFont(const sf::Font& f) { font = f; text.setFont(f); CalculateLayout(); return *this; }
-    UITextField& setStringSize(unsigned int size) { textSize = size; text.setCharacterSize(size); CalculateLayout(); return *this; }
+    UITextField& setOffset(const sf::Vector2f& pos) { e_offset = pos; markLayoutDirty(); return *this; }
+    UITextField& setSize(const sf::Vector2f& size) { e_size = size; markLayoutDirty(); return *this; }
+    UITextField& setFillColor(const sf::Color& color) { e_fillcolor = color; return *this; }
+    UITextField& setAnchor(LayoutAnchor anch) { anchor = anch; markLayoutDirty(); return *this; }
+    UITextField& setLayoutType(LayoutType type) { layoutType = type; markLayoutDirty(); return *this; }
+    UITextField& setSizeType(SizeType type) { sizeType = type; markLayoutDirty(); return *this; }
+    UITextField& setPadding(const sf::Vector2f& pad) { e_padding = pad; markLayoutDirty(); return *this; }
+    UITextField& setBorder(float thickness, const sf::Color& color) { borderThickness = thickness; borderColor = color; return *this; }
+    UITextField& setFont(const sf::Font& f) { font = f; text.setFont(f); return *this; }
+    UITextField& setStringSize(unsigned int size) { textSize = size; text.setCharacterSize(size); return *this; }
     UITextField& setStringColor(const sf::Color& color) { textColor = color; text.setFillColor(color); return *this; }
-    UITextField& setString(const std::string& str) { value = str; if(boundValue) *boundValue = str; text.setString(str); CalculateLayout(); return *this; }
+    UITextField& setString(const std::string& str) { value = str; if(boundValue) *boundValue = str; text.setString(str); return *this; }
 	
 	// --- Element specific
     UITextField& setPlaceholder(const std::string& str) {
@@ -104,9 +104,34 @@ public:
         rect.setOutlineThickness(thickness);
         target.draw(rect, states);
 
+		if (hasSelection()) {
+			sf::Text selText(text);
+			selText.setString(value.substr(0, selectionStart));
+			float xStart = selText.getLocalBounds().width + e_position.x + 5;
+
+			selText.setString(value.substr(selectionStart, selectionEnd - selectionStart));
+			float width = selText.getLocalBounds().width;
+
+			sf::RectangleShape highlight({width, float(textSize)});
+			highlight.setPosition({xStart, e_position.y + 5});
+			highlight.setFillColor(sf::Color(100, 100, 255, 70)); // semi-transparent blue
+			target.draw(highlight, states);
+		}
+
         // text placeholder
         std::string display = boundValue ? *boundValue : value;
-        if (focused && showCursor) display += "|";
+
+        sf::Text caretText(text);
+		caretText.setString(value.substr(0, cursorIndex));
+		float caretX = caretText.getLocalBounds().width;
+
+		if (focused && showCursor) {
+			sf::RectangleShape cursor(sf::Vector2f(1, textSize));
+			cursor.setPosition({e_position.x + 7 + caretX, e_position.y + textSize/2});
+			cursor.setFillColor(sf::Color::Black);
+			target.draw(cursor, states);
+		}
+
         text.setFont(font);
         text.setCharacterSize(textSize);
         text.setFillColor(textColor);
@@ -125,6 +150,16 @@ public:
             ph.setPosition(e_position.x + 5, e_position.y + (e_size.y - ph.getLocalBounds().height) / 2.f - ph.getLocalBounds().top);
             target.draw(ph, states);
         }
+
+		if (layoutDirty) {
+			sf::ConvexShape triangle;
+			triangle.setPointCount(3);
+			triangle.setPoint(0, e_position);
+			triangle.setPoint(1, e_position + sf::Vector2f(10, 0));
+			triangle.setPoint(2, e_position + sf::Vector2f(0, 10));
+			triangle.setFillColor(sf::Color::Red);
+			target.draw(triangle, states);
+		}
     }
 
 	void Update(const float dt) override {
@@ -145,6 +180,9 @@ public:
 	}
 
     void CalculateLayout() override {
+		if(!layoutDirty) return;
+		layoutDirty = false;
+
         if(layoutType == LayoutType::Static) {
             e_position = e_offset;
         } else if(layoutType == LayoutType::Relative) {
@@ -162,9 +200,15 @@ public:
         } else if(layoutType == LayoutType::Anchor) {
             e_position = e_offset;
         }
+
 		// Calculate size based on sizeType
- 		if (sizeType == SizeType::FitContent) {
-			std::runtime_error("FitContent size type is not supported for UIButton.");
+		if (sizeType == SizeType::FitContent) {
+			sf::Text tempText(value.empty() ? placeholder : value, font, textSize);
+			sf::FloatRect bounds = tempText.getLocalBounds();
+			float width = bounds.width + e_padding.x * 2.f + 20.f; // +10 to account for cursor or buffer
+			float height = bounds.height + e_padding.y * 2.f + 20.f;
+
+			e_size = { width, height };
 		} else if (sizeType == SizeType::FillParent) {
 			// Fill parent logic (e.g., match parent's size)
 			if (auto parentPtr = parent.lock()) {
@@ -181,39 +225,130 @@ public:
     }
 
     void HandleEvent(const UIEvent& event) override {
-        if (!enabled) return; // Ignore events if not enabled or visible
+        if (!enabled) return; // Ignore events if not enabled
 
         bool changed = false;
         if (event.type == UIEventType::MouseDown) {
             focused = contains(event.mousePos);
         }
-        if (!focused) return;
+
+		if(!focused) return;
 
         if (event.type == UIEventType::TextEntered && event.textChar >= 32 && event.textChar < 127) {
-            value += event.textChar;
+			pushUndoState();
+			redoStack.clear();
+			if (hasSelection()) {
+				value.erase(selectionStart, selectionEnd - selectionStart);
+				cursorIndex = selectionStart;
+				selectionEnd = selectionStart;
+			}
+            value.insert(cursorIndex, 1, event.textChar);
+			cursorIndex++;
             text.setString(value);
             changed = true;
         } else if (event.type == UIEventType::KeyDown) {
             if (event.key == sf::Keyboard::BackSpace) {
-                if (!value.empty()) { value.pop_back(); changed = true; }
+				pushUndoState();
+				redoStack.clear();
+				if(hasSelection()){
+					value.erase(selectionStart, selectionEnd - selectionStart);
+					cursorIndex = selectionStart;
+					selectionEnd = selectionStart;
+				}else{ 
+					if (!value.empty() && cursorIndex>0) { value.erase(cursorIndex - 1, 1); cursorIndex--; changed = true; } 
+				}
+
                 text.setString(value);
-            } else if (event.key == sf::Keyboard::Enter || event.key == sf::Keyboard::Return) {
-                focused = false;
-                if (onEnter){
-                    onEnter(value);
-                }
-            }
-            // Optionally: handle left/right arrows, etc.
+            } else if (event.key == sf::Keyboard::Enter) {
+				if(event.shift){
+					value.insert(cursorIndex, "\n");
+					cursorIndex++;
+					changed = true;
+				}else{
+					focused = false;
+					if (onEnter){
+						onEnter(value);
+					}
+				}
+            } else if (event.key == sf::Keyboard::Left && cursorIndex > 0) {
+				cursorIndex--;
+			} else if (event.key == sf::Keyboard::Right && cursorIndex < value.size()) {
+				cursorIndex++;
+			} else if (event.key == sf::Keyboard::A && event.ctrl) {
+				// Select all
+				selectionStart = 0;
+				selectionEnd = value.size();
+				selecting = true;
+			} else if (event.key == sf::Keyboard::C && event.ctrl) {	//ctrl c copy
+				std::string selected;
+				if(hasSelection())
+					selected = value.substr(selectionStart, selectionEnd - selectionStart);
+				else
+					selected = value;
+				sf::Clipboard::setString(selected);
+
+			}else if (event.key == sf::Keyboard::V && event.ctrl) {	//ctrl v paste
+				pushUndoState();
+				redoStack.clear();
+				std::string paste = sf::Clipboard::getString().toAnsiString();
+				value.insert(cursorIndex, paste);
+				cursorIndex += paste.size();
+				changed = true;
+			}else if (event.key == sf::Keyboard::X && event.ctrl) {	//ctrl x cut
+				pushUndoState();
+				redoStack.clear();
+
+				std::string selected;
+				if(hasSelection()){
+					selected = value.substr(selectionStart, selectionEnd - selectionStart);
+					value.erase(selectionStart, selectionEnd - selectionStart);
+				}else{
+					selected = value;
+					value.clear();
+				}
+				sf::Clipboard::setString(selected);
+				cursorIndex = value.size();
+				changed = true;
+			}else if (event.key == sf::Keyboard::Z && event.ctrl) {
+				if (!undoStack.empty()) {
+					redoStack.push_back(value);
+					value = undoStack.back();
+					undoStack.pop_back();
+					changed = true;
+					cursorIndex = value.size();
+				}
+			}else if (event.key == sf::Keyboard::Y && event.ctrl) {
+				if (!redoStack.empty()) {
+					undoStack.push_back(value);
+					value = redoStack.back();
+					redoStack.pop_back();
+					changed = true;
+					cursorIndex = value.size();
+				}
+			}
         }
-        if (changed && onChange) onChange(value);
+
+        if (changed){
+			markLayoutDirty();
+			if(onChange) onChange(value);
+		}
         if (boundValue) *boundValue = value; // Update bound value if set
     }
 
 private:
-    bool contains(const sf::Vector2f& pt) const {
+    bool contains(const sf::Vector2f& pt)  {
         return pt.x >= e_position.x && pt.x <= e_position.x + e_size.x &&
                pt.y >= e_position.y && pt.y <= e_position.y + e_size.y;
     }
+	bool hasSelection()  {
+		return selectionEnd > selectionStart;
+	}
+	void pushUndoState() {
+		if (undoStack.empty() || undoStack.back() != value) {
+			undoStack.push_back(value);
+			if (undoStack.size() > 100) undoStack.erase(undoStack.begin()); // limit history size
+		}
+	}
     std::string value;
     sf::Text text;
     sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
@@ -222,9 +357,17 @@ private:
     bool focused = false;
     bool showCursor = false;
     float cursorTimer = 0.f;
+	size_t cursorIndex = 0;
+	size_t selectionStart = 0;
+	size_t selectionEnd = 0;
+	bool selecting = false;
     std::function<void(const std::string&)> onEnter;
     std::function<void(const std::string&)> onChange;
     std::function<void(UITextField&)> onTick;
     std::string placeholder;
     sf::Color placeholderColor = sf::Color(120, 120, 120, 120);
+
+	std::vector<std::string> undoStack;
+	std::vector<std::string> redoStack;
+	float lastEditTime = 0.f;
 };

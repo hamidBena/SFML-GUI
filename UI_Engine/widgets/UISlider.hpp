@@ -11,17 +11,17 @@ public:
     UISlider(const std::string& name = defaultName()) : UILeaf(name) {}
 
     // --- Standard setters (copied from StandardLeaf/UILeaf for consistency) ---
-    UISlider& setOffset(const sf::Vector2f& pos) { e_offset = pos; CalculateLayout(); return *this; }
-    UISlider& setSize(const sf::Vector2f& size) { e_size = size; CalculateLayout(); return *this; }
-    UISlider& setFillColor(const sf::Color& color) { e_fillcolor = color; CalculateLayout(); return *this; }
-    UISlider& setBorder(float thickness, const sf::Color& color) { borderThickness = thickness; borderColor = color; CalculateLayout(); return *this; }
+    UISlider& setOffset(const sf::Vector2f& pos) { e_offset = pos; markLayoutDirty(); return *this; }
+    UISlider& setSize(const sf::Vector2f& size) { e_size = size; markLayoutDirty(); return *this; }
+    UISlider& setFillColor(const sf::Color& color) { e_fillcolor = color; return *this; }
+    UISlider& setBorder(float thickness, const sf::Color& color) { borderThickness = thickness; borderColor = color; return *this; }
     UISlider& setFont(const sf::Font& f) { font = f; return *this; }
     UISlider& setTextSize(unsigned int size) { textSize = size; return *this; }
     UISlider& setTextColor(const sf::Color& color) { textColor = color; return *this; }
-    UISlider& setPadding(const sf::Vector2f& pad) { e_padding = pad; CalculateLayout(); return *this; }
-    UISlider& setAnchor(LayoutAnchor anch) { anchor = anch; CalculateLayout(); return *this; }
-    UISlider& setLayoutType(LayoutType type) { layoutType = type; CalculateLayout(); return *this; }
-    UISlider& setSizeType(SizeType type) { sizeType = type; CalculateLayout(); return *this; }
+    UISlider& setPadding(const sf::Vector2f& pad) { e_padding = pad; markLayoutDirty(); return *this; }
+    UISlider& setAnchor(LayoutAnchor anch) { anchor = anch; markLayoutDirty(); return *this; }
+    UISlider& setLayoutType(LayoutType type) { layoutType = type; markLayoutDirty(); return *this; }
+    UISlider& setSizeType(SizeType type) { sizeType = type; markLayoutDirty(); return *this; }
     UISlider& setEnable(bool en) { enabled = en; return *this; }
     UISlider& setVisible(bool vis) { visible = vis; return *this; }
 

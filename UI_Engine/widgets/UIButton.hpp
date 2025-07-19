@@ -14,61 +14,54 @@ public:
     // Builder setters
     UIButton& setOffset(const sf::Vector2f& pos) {
         e_offset = pos;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
 	UIButton& setLayoutType(LayoutType type) {
 		layoutType = type;
-		CalculateLayout();
+		markLayoutDirty();
 		return *this;
 	}
 	UIButton& setSizeType(SizeType type) {
 		sizeType = type;
-		CalculateLayout();
+		markLayoutDirty();
 		return *this;
 	}
     UIButton& setSize(const sf::Vector2f& size) {
         e_size = size;
-        CalculateLayout();
+		markLayoutDirty();
         return *this;
     }
     UIButton& setFillColor(const sf::Color& color) {
         e_fillcolor = color;
-        CalculateLayout();
         return *this;
     }
     UIButton& setOutlineColor(const sf::Color& color) {
         e_outlinecolor = color;
-        CalculateLayout();
         return *this;
     }
     UIButton& setOutlineThickness(float t) {
         e_outlineThickness = t;
-        CalculateLayout();
         return *this;
     }
     UIButton& setTextColor(const sf::Color& color) {
         textColor = color;
         label.setFillColor(color);
-        CalculateLayout();
         return *this;
     }
     UIButton& setLabel(const std::string& str) {
         labelText = str;
         label.setString(labelText);
-        CalculateLayout();
         return *this;
     }
     UIButton& setFont(const sf::Font& f) {
         font = f;
         label.setFont(f);
-        CalculateLayout();
         return *this;
     }
     UIButton& setTextSize(unsigned int size) {
         textSize = size;
         label.setCharacterSize(size);
-        CalculateLayout();
         return *this;
     }
     // hover effect configuration	(honestly idk why would i need this, but i know i will)
