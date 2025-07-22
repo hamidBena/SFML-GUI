@@ -6,10 +6,10 @@
 int main() {
     // Create a window
     sf::RenderWindow window(sf::VideoMode(2000, 1200), "SFML gui");
-	window.setFramerateLimit(100);
+	window.setFramerateLimit(60);
 	float counter = 0;
 	std::string counter_string;
-
+	float avg_fps;
 	GUI UI;	//iniotialize the GUI manager
 
 	//create a root container
@@ -33,8 +33,7 @@ int main() {
 		   .setLabel("Increment");
 
 	auto Label1 = UI.CreateLabel();
-	Label1->setOffset({0, 0})
-	.setText("hello people\nthis is my label!");
+	Label1->setText("hello people\nthis is my label!");
 
 	auto InputField = UI.CreateTextField();
 	InputField->setOffset({0, 150})
@@ -54,10 +53,10 @@ int main() {
 		   .setBorder(2, sf::Color::Black)
 		   .setLayoutType(LayoutType::Relative)
 		   .setSizeType(SizeType::Absolute)
-		   .setRange(0.f, 100.f)
+		   .setRange(0.f, 200.f)
 		   .setStep(0.1f)
 		   .setShowValue(false)
-		   .setBoundValue(&counter)
+		   .setBoundValue(&avg_fps)
 		   .setOnChange([&counter_string](float value) {
 		       counter_string = std::to_string(value);
 		   });
@@ -68,13 +67,26 @@ int main() {
 		counter_string = std::to_string(counter);
 		});
 
+	auto FPS_Label = UI.CreateLabel();
+	FPS_Label->setOffset({150, 0})
+	.setTextSize(14)
+	.setSizeType(SizeType::Absolute)
+	.setOnTick([&FPS_Label, &avg_fps](float dt){
+		float fps = 1.f/dt;
+		avg_fps = (avg_fps + fps) / 2.f;
+		std::stringstream ss;
+		ss << "FPS: " << fps;
+		FPS_Label->setText(ss.str());
+	});
+
 	// Add the elements to the Menu
-	Menu1->AddChild(Button1);
 	Menu1->AddChild(Label1);
+	Menu1->AddChild(Button1);
 	Menu1->AddChild(InputField);
 	Menu1->AddChild(Slider1);
+	Menu1->AddChild(FPS_Label);
 
-	UI.RefreshLayout();
+	Menu1->markChildrenDirty();
 
 	sf::Clock clock;
 

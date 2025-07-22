@@ -6,7 +6,11 @@
 
 class UIRoot : public UIContainer {
 public:
-    UIRoot(const std::string& name = defaultName()) : UIContainer(name) {}
+    UIRoot(const std::string& name = defaultName()) : UIContainer(name) {
+		e_fillcolor = sf::Color(70, 70, 73, 230);
+		borderColor = sf::Color(58, 58, 60, 180);
+		headerColor = sf::Color(90, 190, 90, 255);
+	}
 
     // Builder setters
     UIRoot& setOffset(const sf::Vector2f& pos) {
@@ -100,10 +104,21 @@ public:
             headerRect.setOutlineThickness(2.f);
             target.draw(headerRect, states);
 
-            sf::Text headerText;
-            headerText.setString(headerTitle);
-            headerText.setCharacterSize(24);
-            headerText.setFillColor(sf::Color::White);
+			// compute perceived luminance
+			float lum = 0.299f * headerColor.r 
+					+ 0.587f * headerColor.g 
+					+ 0.114f * headerColor.b;
+
+			// pick black or white based on brightness
+			sf::Color textColor = (lum > 128.f) 
+				? sf::Color::Black   // bright background → dark text
+				: sf::Color::White;  // dark background  → light text
+
+			sf::Text headerText;
+			headerText.setString(headerTitle);
+			headerText.setCharacterSize(24);
+			headerText.setFillColor(textColor);
+
             headerText.setFont(font);
             headerText.setPosition(e_position.x + 10, (e_position.y - headerHeight) + (headerHeight - headerText.getLocalBounds().height) / 2.f - headerText.getLocalBounds().top);
             target.draw(headerText, states);
@@ -153,7 +168,13 @@ public:
         // size calculations
 		switch (sizeType) {
 			case SizeType::FitContent: {
-				sf::Vector2f maxSize(0, 0);
+				sf::Text headerText;
+				headerText.setString(headerTitle);
+				headerText.setCharacterSize(24);
+				headerText.setFillColor(sf::Color::White);
+				headerText.setFont(font);
+				
+				sf::Vector2f maxSize = headerText.getLocalBounds().getSize() + e_padding;
 				for (const auto& child : children) {
 					child->CalculateLayout();
 					sf::Vector2f childBR = child->e_position + child->e_size - e_position;

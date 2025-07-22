@@ -14,6 +14,7 @@
 #include "../widgets/UILabel.hpp"
 #include "../widgets/UITextField.hpp"
 #include "../widgets/UISlider.hpp"
+#include "../widgets/UICheckBox.hpp"
 #include "core/UIEvent.hpp"
 
 class GUI {
@@ -25,6 +26,7 @@ public:
     std::shared_ptr<UILabel> CreateLabel();
     std::shared_ptr<UITextField> CreateTextField();
     std::shared_ptr<UISlider> CreateSlider();
+    std::shared_ptr<UICheckBox> CreateUICheckBox();
 
     std::shared_ptr<UIElement> GetElementByName(const std::string& name);
 
@@ -36,12 +38,6 @@ public:
 
 	void Update(const float dt);
 	void ProcessEvent(const sf::Event& event);
-
-	void RefreshLayout() {
-		for (auto& root : UIRoots) {
-			root->CalculateLayout();
-		}
-	}
 
 	void AddRoot(std::shared_ptr<UIRoot> root) {
 		UIRoots.push_back(std::move(root));

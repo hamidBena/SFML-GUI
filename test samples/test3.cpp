@@ -92,7 +92,6 @@ int main() {
 	Menu1->AddChild(textfield1);
 	Menu1->AddChild(clearButton);
 	Menu1->AddChild(teleportButton);
-    UI.RefreshLayout();
 
     sf::Clock clock;
 

@@ -6,7 +6,12 @@
 
 class UITextField : public UILeaf {
 public:
-    UITextField(const std::string& name = defaultName()) : UILeaf(name) {}
+    UITextField(const std::string& name = defaultName()) : UILeaf(name) {
+		e_fillcolor = sf::Color(70, 120, 70, 205);
+		borderColor = sf::Color(20, 20, 20, 255);
+		textColor = sf::Color(249, 249, 251, 255);
+		placeholderColor = sf::Color(242, 242, 247, 170);
+	}
 
 	std::string *boundValue = nullptr;
 
@@ -22,7 +27,7 @@ public:
     UITextField& setFont(const sf::Font& f) { font = f; text.setFont(f); return *this; }
     UITextField& setStringSize(unsigned int size) { textSize = size; text.setCharacterSize(size); return *this; }
     UITextField& setStringColor(const sf::Color& color) { textColor = color; text.setFillColor(color); return *this; }
-    UITextField& setString(const std::string& str) { value = str; if(boundValue) *boundValue = str; text.setString(str); return *this; }
+    UITextField& setString(const std::string& str) { value = str; if(boundValue) *boundValue = str; text.setString(str); markLayoutDirty(); return *this; }
 	
 	// --- Element specific
     UITextField& setPlaceholder(const std::string& str) {
@@ -73,21 +78,12 @@ public:
 
 		if (boundValue && value != *boundValue) {
 			value = *boundValue;
-			text.setString(value);
+			setString(value);
 		}
 
         // Enhanced highlight: glow effect and stronger border when focused
-        sf::Color border = focused ? sf::Color(60, 160, 255) : borderColor;
-        float thickness = focused ? borderThickness + 2.5f : borderThickness;
-
-        // Glow effect: draw a soft blue shadow if focused
-        if (focused) {
-            sf::RectangleShape glow(e_size + sf::Vector2f(8, 8));
-            glow.setPosition(e_position - sf::Vector2f(4, 4));
-            glow.setFillColor(sf::Color(60, 160, 255, 40));
-            glow.setOutlineThickness(0);
-            target.draw(glow, states);
-        }
+        sf::Color border = focused ? sf::Color(60, 160, 60) : borderColor;
+        float thickness = focused ? borderThickness + 0.7f : borderThickness;
 
         // Slightly brighten background when focused
         sf::Color bg = e_fillcolor;
@@ -114,7 +110,7 @@ public:
 
 			sf::RectangleShape highlight({width, float(textSize)});
 			highlight.setPosition({xStart, e_position.y + 5});
-			highlight.setFillColor(sf::Color(100, 100, 255, 70)); // semi-transparent blue
+			highlight.setFillColor(sf::Color(100, 100, 255, 80)); // semi-transparent blue
 			target.draw(highlight, states);
 		}
 
@@ -145,7 +141,6 @@ public:
             ph.setCharacterSize(textSize);
             ph.setString(placeholder);
             sf::Color phColor = placeholderColor;
-            phColor.a = 120; // semi-transparent
             ph.setFillColor(phColor);
             ph.setPosition(e_position.x + 5, e_position.y + (e_size.y - ph.getLocalBounds().height) / 2.f - ph.getLocalBounds().top);
             target.draw(ph, states);
@@ -228,9 +223,27 @@ public:
         if (!enabled) return; // Ignore events if not enabled
 
         bool changed = false;
-        if (event.type == UIEventType::MouseDown) {
-            focused = contains(event.mousePos);
-        }
+		if (event.type == UIEventType::MouseDown) {
+			focused = contains(event.mousePos);
+			selectionEnd = selectionStart;
+
+			if (focused) {
+				// Estimate cursor position from mouse click
+				float localX = event.mousePos.x - (e_position.x + 5); // Adjust for padding
+				cursorIndex = 0;
+
+				sf::Text measureText(text);
+				for (size_t i = 1; i <= value.size(); ++i) {
+					measureText.setString(value.substr(0, i));
+					if (measureText.getLocalBounds().width > localX) {
+						break;
+					}
+					cursorIndex = i;
+				}
+
+				selectionStart = selectionEnd = cursorIndex;
+			}
+		}
 
 		if(!focused) return;
 
@@ -270,10 +283,13 @@ public:
 						onEnter(value);
 					}
 				}
+				selectionStart = selectionEnd;
             } else if (event.key == sf::Keyboard::Left && cursorIndex > 0) {
 				cursorIndex--;
+				selectionEnd = selectionStart;
 			} else if (event.key == sf::Keyboard::Right && cursorIndex < value.size()) {
 				cursorIndex++;
+				selectionEnd = selectionStart;
 			} else if (event.key == sf::Keyboard::A && event.ctrl) {
 				// Select all
 				selectionStart = 0;
@@ -365,7 +381,7 @@ private:
     std::function<void(const std::string&)> onChange;
     std::function<void(UITextField&)> onTick;
     std::string placeholder;
-    sf::Color placeholderColor = sf::Color(120, 120, 120, 120);
+    sf::Color placeholderColor;
 
 	std::vector<std::string> undoStack;
 	std::vector<std::string> redoStack;

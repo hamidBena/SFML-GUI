@@ -7,7 +7,11 @@
 class UILabel : public UILeaf {
 public:
     UILabel(const std::string& name = defaultName()) : UILeaf(name) {
+		e_fillcolor = sf::Color(60, 100, 63, 1);
+		textColor = sf::Color(230, 230, 230, 255);
+		borderColor = sf::Color(20, 20, 20, 255);
 		sizeType = SizeType::FitContent;
+		e_padding = {5, 5};
 	}
 
     // --- Standard builder-style setters ---
@@ -52,8 +56,9 @@ public:
     }
     // --- Widget-specific setters ---
     UILabel& setText(const std::string& str) {
-        text.setString(str);
-        labelText = str;
+		labelText = str;
+        text.setString(labelText);
+		markLayoutDirty();
         return *this;
     }
     UILabel& setFont(const sf::Font& f) {
@@ -118,6 +123,7 @@ public:
 				if(decimals > 0){
 					displayText.push_back(labelText.at(counter));
 					for(auto i=0; i<decimals; i++){
+						if(counter+1 >= labelText.size()) break;
 						if(!std::isdigit(labelText.at(counter+1))) break;
 
 						counter++;

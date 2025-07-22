@@ -35,6 +35,11 @@ std::shared_ptr<UISlider> GUI::CreateSlider() {
 	return Slider;
 }
 
+std::shared_ptr<UICheckBox> GUI::CreateUICheckBox() {
+	auto Chkbx = std::make_shared<UICheckBox>();
+	return Chkbx;
+}
+
 std::shared_ptr<UIElement> GUI::GetElementByName(const std::string& name) {
     for (const auto& root : UIRoots) {
         auto found = FindElementRecursive(root, name);

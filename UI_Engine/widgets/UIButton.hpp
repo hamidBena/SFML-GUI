@@ -9,7 +9,13 @@
 
 class UIButton : public UILeaf {
 public:
-    UIButton(const std::string& name = defaultName()) : UILeaf(name) {}
+    UIButton(const std::string& name = defaultName()) : UILeaf(name) {
+		e_fillcolor = sf::Color(60, 160, 60, 255);
+		textColor = sf::Color(220, 230, 220, 255);
+		borderColor = sf::Color(20, 20, 20, 255);
+		sizeType = SizeType::FitContent;
+		e_padding = {5, 5};
+	}
 
     // Builder setters
     UIButton& setOffset(const sf::Vector2f& pos) {

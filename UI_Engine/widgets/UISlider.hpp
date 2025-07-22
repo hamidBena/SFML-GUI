@@ -8,7 +8,9 @@
 #include <limits> 
 class UISlider : public UILeaf {
 public:
-    UISlider(const std::string& name = defaultName()) : UILeaf(name) {}
+    UISlider(const std::string& name = defaultName()) : UILeaf(name) {
+
+	}
 
     // --- Standard setters (copied from StandardLeaf/UILeaf for consistency) ---
     UISlider& setOffset(const sf::Vector2f& pos) { e_offset = pos; markLayoutDirty(); return *this; }
@@ -34,56 +36,67 @@ public:
     UISlider& setShowValue(bool show) { showValue = show; return *this; }
     UISlider& setOnTick(std::function<void(UISlider&, const float&)> cb) { onTick = std::move(cb); return *this; }
 
-    // --- Drawing ---
-    void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-        if (!visible) return;
+	// --- Drawing ---
+	void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
+		if (!visible) return;
 
-        // Sync with bound value
-        if (boundValue) value =std::clamp(*boundValue, minValue, maxValue);
+		// Sync with bound value
+		if (boundValue) value = std::clamp(*boundValue, minValue, maxValue);
 
-		// track
-        float trackHeight = e_size.y / 6.f;
-        sf::RectangleShape track({e_size.x, trackHeight});
-        track.setPosition(e_position.x, e_position.y + e_size.y / 2.f - trackHeight / 2.f);
-        track.setFillColor(e_fillcolor);
-        track.setOutlineColor(borderColor);
-        track.setOutlineThickness(borderThickness);
-        target.draw(track, states);
+		// --- Outer Slider Track ---
+		float outerHeight = e_size.y / 3.f;
+		sf::RectangleShape outerTrack({e_size.x, outerHeight});
+		outerTrack.setPosition(e_position.x, e_position.y + (e_size.y - outerHeight) / 2.f);
+		outerTrack.setFillColor(sf::Color(50, 50, 50, 180));
+		outerTrack.setOutlineColor(borderColor);
+		outerTrack.setOutlineThickness(borderThickness);
+		target.draw(outerTrack, states);
 
-        // Draw handle as rectangle with hover/sliding effect
-        float t = (value - minValue) / (maxValue - minValue);
-        float handleWidth = e_size.y * 0.4f;
-        float handleHeight = e_size.y * 0.9f;
-        float handleX = e_position.x + t * e_size.x - handleWidth / 2.f;
-        float handleY = e_position.y + e_size.y / 2.f - handleHeight / 2.f;
-        sf::RectangleShape handle({handleWidth, handleHeight});
-        handle.setPosition(handleX, handleY);
-        sf::Color handleColor = (hovered || dragging) ? sf::Color(60, 160, 255) : sf::Color(200, 200, 200);
-        if (dragging) {
-            // Sliding effect: brighten handle
-            handleColor.r = std::min(255, handleColor.r + 40);
-            handleColor.g = std::min(255, handleColor.g + 40);
-            handleColor.b = std::min(255, handleColor.b + 40);
-        }
-        handle.setFillColor(handleColor);
-        handle.setOutlineColor(borderColor);
-        handle.setOutlineThickness(borderThickness);
-        target.draw(handle, states);
+		// --- Inner Filled Bar (based on value) ---
+		float t = (value - minValue) / (maxValue - minValue);
+		float innerWidth = e_size.x * t;
+		sf::RectangleShape innerTrack({innerWidth, outerHeight});
+		innerTrack.setPosition(e_position.x, e_position.y + (e_size.y - outerHeight) / 2.f);
+		innerTrack.setFillColor(sf::Color(80, 200, 80, 255));
+		target.draw(innerTrack, states);
 
-        // Draw value text
-        if (showValue) {
-            sf::Text txt;
-            std::stringstream ss;
-            ss << std::fixed << std::setprecision(2) << value;
-            txt.setString(ss.str());
+		// --- Slider Handle ---
+		float handleSize = e_size.y * 0.25f;
+		float handleX = e_position.x + t * e_size.x - handleSize / 2.f;
+		float handleY = e_position.y + (e_size.y - handleSize) / 2.f;
+		sf::RectangleShape handle({handleSize, handleSize});
+		handle.setPosition(handleX, handleY);
 
-            txt.setFont(font);
-            txt.setCharacterSize(textSize);
-            txt.setFillColor(textColor);
-            txt.setPosition(e_position.x + e_size.x + 10, e_position.y + e_size.y / 2.f - txt.getLocalBounds().height / 2.f - txt.getLocalBounds().top);
-            target.draw(txt, states);
-        }
-    }
+		sf::Color handleColor = (hovered || dragging) ? sf::Color(100, 180, 255) : sf::Color(200, 200, 200);
+		if (dragging) {
+			handleColor.r = std::min(255, handleColor.r + 30);
+			handleColor.g = std::min(255, handleColor.g + 30);
+			handleColor.b = std::min(255, handleColor.b + 30);
+		}
+		handle.setFillColor(handleColor);
+		handle.setOutlineColor(borderColor);
+		handle.setOutlineThickness(borderThickness);
+		target.draw(handle, states);
+
+		// --- Draw Value Text in the center of the slider ---
+		if (showValue) {
+			sf::Text txt;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << value;
+			txt.setString(ss.str());
+
+			txt.setFont(font);
+			txt.setCharacterSize(textSize);
+			txt.setFillColor(textColor);
+
+			sf::FloatRect textBounds = txt.getLocalBounds();
+			txt.setOrigin(textBounds.left + textBounds.width / 2.f,
+						textBounds.top + textBounds.height / 2.f);
+			txt.setPosition(e_position.x + e_size.x / 2.f,
+							e_position.y + e_size.y / 2.f);
+			target.draw(txt, states);
+		}
+	}
 
     void CalculateLayout() override {
         if(layoutType == LayoutType::Static) {

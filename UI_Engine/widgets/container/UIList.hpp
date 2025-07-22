@@ -6,7 +6,11 @@
 
 class UIList : public UIContainer {
 public:
-    UIList(const std::string& name = defaultName()) : UIContainer(name) {}
+    UIList(const std::string& name = defaultName()) : UIContainer(name) {
+		e_fillcolor = sf::Color(75, 75, 70, 230);
+		borderColor = sf::Color(58, 58, 60, 180);
+		headerColor = sf::Color(100, 200, 90, 255);
+	}
 
     // Builder setters
     UIList& setOffset(const sf::Vector2f& pos) {
@@ -106,10 +110,21 @@ public:
             headerRect.setOutlineThickness(2.f);
             target.draw(headerRect, states);
 
-            sf::Text headerText;
-            headerText.setString(headerTitle);
-            headerText.setCharacterSize(24);
-            headerText.setFillColor(sf::Color::White);
+			// compute perceived luminance
+			float lum = 0.299f * headerColor.r 
+					+ 0.587f * headerColor.g 
+					+ 0.114f * headerColor.b;
+
+			// pick black or white based on brightness
+			sf::Color textColor = (lum > 128.f) 
+				? sf::Color::Black   // bright background → dark text
+				: sf::Color::White;  // dark background  → light text
+
+			sf::Text headerText;
+			headerText.setString(headerTitle);
+			headerText.setCharacterSize(24);
+			headerText.setFillColor(textColor);
+
             headerText.setFont(font);
             headerText.setPosition(e_position.x + 10, (e_position.y - headerHeight) + (headerHeight - headerText.getLocalBounds().height) / 2.f - headerText.getLocalBounds().top);
             target.draw(headerText, states);
@@ -158,8 +173,13 @@ public:
 				child->e_position.y = currentY;
 				currentY += child->e_size.y + spacing; // Stack children vertically with spacing
 			}
-
-            sf::Vector2f maxSize(0, 0);
+			
+			sf::Text headerText;
+            headerText.setString(headerTitle);
+            headerText.setCharacterSize(24);
+            headerText.setFillColor(sf::Color::White);
+            headerText.setFont(font);
+            sf::Vector2f maxSize = headerText.getLocalBounds().getSize() + e_padding;
             for (const auto& child : children) {
                 sf::Vector2f childBR = child->e_position + child->e_size - e_position; // bottom-right relative to root
                 maxSize.x = std::max(maxSize.x, childBR.x);
