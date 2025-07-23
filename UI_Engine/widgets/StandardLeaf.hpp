@@ -48,7 +48,7 @@ public:
 	UILabel& setOnTick(std::function<void(UILabel&)> cb) { onTick = std::move(cb); return *this; }
 
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if(!visible) return; // Skip rendering if not visible
+		if(!visible || !enabled) return; // Skip rendering if not visible
 
         text.setFont(font);
         text.setCharacterSize(textSize);

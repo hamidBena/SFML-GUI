@@ -86,12 +86,13 @@ std::shared_ptr<UIElement> GUI::FindElementRecursive(const std::shared_ptr<UIEle
 
 void GUI::draw(sf::RenderTarget& target, sf::RenderStates states){
 	sf::View oldView = target.getView();
-    // Set to default view (screen-space)	
-	target.setView(target.getDefaultView());
+	sf::View screenSpaceView;
+	screenSpaceView.setSize(target.getSize().x, target.getSize().y);
+	screenSpaceView.setCenter(target.getSize().x / 2.f, target.getSize().y / 2.f);
 
+	target.setView(screenSpaceView);
 	for(auto& root : UIRoots) root->Render(target, states);
-	// Restore the previous view (world-space)
-    target.setView(oldView);
+	target.setView(oldView);
 }
 
 void GUI::HandleEvent(const UIEvent& event) {

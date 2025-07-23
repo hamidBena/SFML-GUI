@@ -105,7 +105,7 @@ public:
 	}
 
 	void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if (!visible) return;
+		if (!visible || !enabled) return;
 
 		// Draw background (if alpha > 0)
 		if (e_fillcolor.a > 0) {

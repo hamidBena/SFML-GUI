@@ -4,6 +4,14 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <functional>
 
+struct Components {
+	sf::RectangleShape background;
+	std::optional<sf::RectangleShape> headerBar;
+	std::optional<sf::Text> headerText;
+	std::optional<sf::ConvexShape> debugTriangle;
+	sf::RectangleShape toggleButton;
+};
+
 class UIList : public UIContainer {
 public:
     UIList(const std::string& name = defaultName()) : UIContainer(name) {
@@ -104,59 +112,17 @@ public:
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
 		if(!visible) return;
 
-        // main background
-        sf::RectangleShape rect(intr_size.getValue());
-        rect.setPosition(e_position);
-        rect.setFillColor(e_fillcolor);
-        rect.setOutlineColor(sf::Color::Black);
-        rect.setOutlineThickness(2.f);
-        target.draw(rect, states);
-
-        // header bar
-        if (headerHeight > 0.f) {
-            sf::Color headerBarColor = headerColor;
-            headerBarColor.r = static_cast<sf::Uint8>(headerBarColor.r * 0.7f);
-            headerBarColor.g = static_cast<sf::Uint8>(headerBarColor.g * 0.7f);
-            headerBarColor.b = static_cast<sf::Uint8>(headerBarColor.b * 0.7f);
-            sf::RectangleShape headerRect({intr_size.getValue().x, headerHeight});
-            headerRect.setPosition(e_position.x, e_position.y - headerHeight);
-            headerRect.setFillColor(headerBarColor);
-            headerRect.setOutlineColor(sf::Color::Black);
-            headerRect.setOutlineThickness(2.f);
-            target.draw(headerRect, states);
-
-			// compute perceived luminance
-			float lum = 0.299f * headerColor.r 
-					+ 0.587f * headerColor.g 
-					+ 0.114f * headerColor.b;
-
-			// pick black or white based on brightness
-			sf::Color textColor = (lum > 128.f) 
-				? sf::Color::Black   // bright background → dark text
-				: sf::Color::White;  // dark background  → light text
-
-			sf::Text headerText;
-			headerText.setString(headerTitle);
-			headerText.setCharacterSize(24);
-			headerText.setFillColor(textColor);
-
-            headerText.setFont(font);
-            headerText.setPosition(e_position.x + 10, (e_position.y - headerHeight) + (headerHeight - headerText.getLocalBounds().height) / 2.f - headerText.getLocalBounds().top);
-            target.draw(headerText, states);
-        }
-
-		if (layoutDirty) {
-			sf::ConvexShape triangle;
-			triangle.setPointCount(3);
-			triangle.setPoint(0, e_position);
-			triangle.setPoint(1, e_position + sf::Vector2f(10, 0));
-			triangle.setPoint(2, e_position + sf::Vector2f(0, 10));
-			triangle.setFillColor(sf::Color::Red);
-			target.draw(triangle, states);
-		}
+		Components shapes = buildShapes();
+		target.draw(shapes.background, states);
+		if (shapes.headerBar)     target.draw(*shapes.headerBar, states);
+		if (shapes.headerText)    target.draw(*shapes.headerText, states);
+		if (shapes.debugTriangle) target.draw(*shapes.debugTriangle, states);
+		target.draw(shapes.toggleButton, states);
     }
 
     void CalculateLayout() override {
+		if(!enabled) return;
+
 		if(!layoutDirty) return;
 		layoutDirty = false;
 
@@ -178,18 +144,14 @@ public:
             e_position = e_offset;
         }
 
-		interpolated_position = e_position;
-
 		sf::Vector2f current_p;
         if (sizeType == SizeType::FitContent) {
 			current_p = e_position + e_padding;
 			for (auto& child : children) {
-				if(child->enabled){
-					child->CalculateLayout();
-					if(is_horizontal) child->e_position.x = current_p.x;
-					else child->e_position.y = current_p.y;
-					current_p += child->e_size + sf::Vector2f(spacing, spacing);
-				}
+				child->CalculateLayout();
+				if(is_horizontal) child->e_position.x = current_p.x;
+				else child->e_position.y = current_p.y;
+				current_p += child->e_size + sf::Vector2f(spacing, spacing);
 			}
 			
 			sf::Text headerText;
@@ -197,11 +159,13 @@ public:
             headerText.setCharacterSize(24);
             headerText.setFillColor(sf::Color::White);
             headerText.setFont(font);
-            sf::Vector2f maxSize = headerText.getLocalBounds().getSize() + e_padding;
+            sf::Vector2f maxSize = headerText.getLocalBounds().getSize() + e_padding + sf::Vector2f(20,0);
             for (const auto& child : children) {
-                sf::Vector2f childBR = child->e_position + child->e_size - e_position; // bottom-right relative to root
-                maxSize.x = std::max(maxSize.x, childBR.x);
-                maxSize.y = std::max(maxSize.y, childBR.y);
+				if(child->enabled){
+					sf::Vector2f childBR = child->e_position + child->e_size - e_position;
+					maxSize.x = std::max(maxSize.x, childBR.x);
+					maxSize.y = std::max(maxSize.y, childBR.y);
+				}
             }
             e_size = maxSize + e_padding * 2.f;
         } else if (sizeType == SizeType::FillParent) {
@@ -237,7 +201,26 @@ public:
 
     void HandleEvent(const UIEvent& event) override {
 		if (!enabled) return;
-
+		auto shapes = buildShapes();
+        if (headerHeight > 0.f) {
+            sf::FloatRect togglebounds = shapes.toggleButton.getGlobalBounds();
+            if (event.type == UIEventType::MouseDown && event.mouseButton == 0) {
+                if (togglebounds.contains(event.mousePos)) {
+					for(auto& child : children){
+						child->enabled = !child->enabled;
+					}
+					markLayoutDirty();
+                    return;
+                }
+            }
+			else if (event.type == UIEventType::MouseMove) {
+				if (togglebounds.contains(event.mousePos)) {
+					is_hovered = true;
+                }else{
+					is_hovered = false;
+				}
+			}
+        }
         for (auto& child : children) {
             child->HandleEvent(event);
         }
@@ -250,8 +233,75 @@ private:
     sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
 
     bool is_horizontal = false;
+	bool is_hovered = false;
 
     std::function<void(UIList&, const float dt)> onTick;
-
 	Interpolated<sf::Vector2f> intr_size;
+
+private:
+	Components buildShapes() const {
+		Components shapes;
+
+		// --- Background ---
+		shapes.background.setSize(intr_size.getValue());
+		shapes.background.setPosition(e_position);
+		shapes.background.setFillColor(e_fillcolor);
+		shapes.background.setOutlineColor(sf::Color::Black);
+		shapes.background.setOutlineThickness(2.f);
+
+		// --- Header ---
+		if (headerHeight > 0.f) {
+			sf::Color darker = headerColor;
+			darker.r = static_cast<sf::Uint8>(darker.r * 0.7f);
+			darker.g = static_cast<sf::Uint8>(darker.g * 0.7f);
+			darker.b = static_cast<sf::Uint8>(darker.b * 0.7f);
+
+			sf::RectangleShape headerRect({intr_size.getValue().x, headerHeight});
+			headerRect.setPosition(e_position.x, e_position.y - headerHeight);
+			headerRect.setFillColor(darker);
+			headerRect.setOutlineColor(sf::Color::Black);
+			headerRect.setOutlineThickness(2.f);
+			shapes.headerBar = headerRect;
+
+			// compute perceived luminance for text color
+			float lum = 0.299f * headerColor.r + 0.587f * headerColor.g + 0.114f * headerColor.b;
+			sf::Color textColor = (lum > 128.f) ? sf::Color::Black : sf::Color::White;
+
+			sf::Text headerText;
+			headerText.setFont(font);
+			headerText.setString(headerTitle);
+			headerText.setCharacterSize(24);
+			headerText.setFillColor(textColor);
+			headerText.setPosition(
+				e_position.x + headerHeight + 10.f,
+				(e_position.y - headerHeight) +
+				(headerHeight - headerText.getLocalBounds().height) / 2.f -
+				headerText.getLocalBounds().top
+			);
+			shapes.headerText = headerText;
+		}
+
+		// --- Debug marker (if layout dirty) ---
+		if (layoutDirty) {
+			sf::ConvexShape triangle;
+			triangle.setPointCount(3);
+			triangle.setPoint(0, e_position);
+			triangle.setPoint(1, e_position + sf::Vector2f(10, 0));
+			triangle.setPoint(2, e_position + sf::Vector2f(0, 10));
+			triangle.setFillColor(sf::Color::Red);
+			shapes.debugTriangle = triangle;
+		}
+
+		sf::RectangleShape toggleButton;
+		toggleButton.setSize(sf::Vector2f(25, 8));
+		toggleButton.setPosition(e_position + sf::Vector2f(5,-headerHeight+10));
+
+		if(is_hovered) toggleButton.setFillColor({100,100,100,200});
+		else toggleButton.setFillColor({50,50,50,200});
+
+		shapes.toggleButton = toggleButton;
+
+		return shapes;
+	}
+
 };

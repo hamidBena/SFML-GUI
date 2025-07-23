@@ -78,10 +78,14 @@ int main() {
                 window.close();
                 
             if (event.type == sf::Event::Resized) {
-				window.create(sf::VideoMode(event.size.width, event.size.height), "SFML Example");
+				//window.create(sf::VideoMode(event.size.width, event.size.height), "SFML Example");
 				Menu1->markChildrenDirty();
-            }
 
+				sf::View view = window.getView();
+				view.setSize(event.size.width, event.size.height); // resize the view to match window size
+				view.setCenter(view.getSize().x / 2, view.getSize().y / 2); // keep center in bounds
+				window.setView(view);
+            }
             UI.ProcessEvent(event);
         }
 
@@ -90,6 +94,10 @@ int main() {
 
         window.clear({80, 80, 80});
         UI.draw(window);
+		sf::CircleShape circle;
+		circle.setFillColor(sf::Color::Red);
+		circle.setRadius(100);
+		window.draw(circle);
         window.display();
     }
 

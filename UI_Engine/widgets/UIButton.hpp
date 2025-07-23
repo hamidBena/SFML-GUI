@@ -95,7 +95,7 @@ public:
 	}
 
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if(!visible) return;
+		if(!visible || !enabled) return;
 
         sf::Color drawColor = e_fillcolor;
         // Visual feedback for button state

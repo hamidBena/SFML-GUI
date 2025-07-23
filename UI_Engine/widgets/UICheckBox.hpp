@@ -88,7 +88,7 @@ public:
 
 	// --- Drawing ---
 	void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if (!visible) return;
+		if (!visible || !enabled) return;
 
 		// Draw checkbox box
 		sf::RectangleShape box(sf::Vector2f(e_size.y, e_size.y));

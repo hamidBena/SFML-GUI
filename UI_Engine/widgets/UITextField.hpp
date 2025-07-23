@@ -78,7 +78,7 @@ public:
 
     // --- Drawing ---
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if(!visible) return;
+		if(!visible || !enabled) return;
 
 		if (boundValue && value != *boundValue) {
 			value = *boundValue;
