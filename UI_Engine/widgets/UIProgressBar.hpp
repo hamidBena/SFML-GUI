@@ -6,41 +6,40 @@
 #include <iomanip>
 #include <sstream>
 #include <limits> 
-class UISlider : public UILeaf {
+class UIProgressBar : public UILeaf {
 public:
-    UISlider(const std::string& name = defaultName()) : UILeaf(name) {
-		intr_value.InterpolationType = InterpolationType::easeOutCubic;
+    UIProgressBar(const std::string& name = defaultName()) : UILeaf(name) {
+
 	}
 
     // --- Standard setters (copied from StandardLeaf/UILeaf for consistency) ---
-    UISlider& setOffset(const sf::Vector2f& pos) { e_offset = pos; markLayoutDirty(); return *this; }
-    UISlider& setSize(const sf::Vector2f& size) { e_size = size; markLayoutDirty(); return *this; }
-    UISlider& setFillColor(const sf::Color& color) { e_fillcolor = color; return *this; }
-    UISlider& setBorder(float thickness, const sf::Color& color) { borderThickness = thickness; borderColor = color; return *this; }
-    UISlider& setFont(const sf::Font& f) { font = f; return *this; }
-    UISlider& setTextSize(unsigned int size) { textSize = size; return *this; }
-    UISlider& setTextColor(const sf::Color& color) { textColor = color; return *this; }
-    UISlider& setPadding(const sf::Vector2f& pad) { e_padding = pad; markLayoutDirty(); return *this; }
-    UISlider& setAnchor(LayoutAnchor anch) { anchor = anch; markLayoutDirty(); return *this; }
-    UISlider& setLayoutType(LayoutType type) { layoutType = type; markLayoutDirty(); return *this; }
-    UISlider& setSizeType(SizeType type) { sizeType = type; markLayoutDirty(); return *this; }
-    UISlider& setEnable(bool en) { enabled = en; markLayoutDirty(); return *this; }
-    UISlider& setVisible(bool vis) { visible = vis; return *this; }
+    UIProgressBar& setOffset(const sf::Vector2f& pos) { e_offset = pos; markLayoutDirty(); return *this; }
+    UIProgressBar& setSize(const sf::Vector2f& size) { e_size = size; markLayoutDirty(); return *this; }
+    UIProgressBar& setFillColor(const sf::Color& color) { e_fillcolor = color; return *this; }
+    UIProgressBar& setBorder(float thickness, const sf::Color& color) { borderThickness = thickness; borderColor = color; return *this; }
+    UIProgressBar& setFont(const sf::Font& f) { font = f; return *this; }
+    UIProgressBar& setTextSize(unsigned int size) { textSize = size; return *this; }
+    UIProgressBar& setTextColor(const sf::Color& color) { textColor = color; return *this; }
+    UIProgressBar& setPadding(const sf::Vector2f& pad) { e_padding = pad; markLayoutDirty(); return *this; }
+    UIProgressBar& setAnchor(LayoutAnchor anch) { anchor = anch; markLayoutDirty(); return *this; }
+    UIProgressBar& setLayoutType(LayoutType type) { layoutType = type; markLayoutDirty(); return *this; }
+    UIProgressBar& setSizeType(SizeType type) { sizeType = type; markLayoutDirty(); return *this; }
+    UIProgressBar& setEnable(bool en) { enabled = en; markLayoutDirty(); return *this; }
+    UIProgressBar& setVisible(bool vis) { visible = vis; return *this; }
 
     // --- Slider-specific setters ---
-    UISlider& setRange(float minVal, float maxVal) { minValue = minVal; maxValue = maxVal; setValue(value); return *this; }
-    UISlider& setStep(float s) { step = s; return *this; }
-    UISlider& setValue(float v) { value = std::clamp(v, minValue, maxValue);
-								if (boundValue) *boundValue = value; 
-								if (onChange) onChange(value);
-								intr_value.setValue(value);
-								return *this; }
-    UISlider& setOnChange(std::function<void(float)> cb) { onChange = std::move(cb); return *this; }
-    UISlider& setBoundValue(float* bound) { boundValue = bound; if (bound) setValue(*bound); return *this; }
-    UISlider& setShowValue(bool show) { showValue = show; return *this; }
-    UISlider& setOnTick(std::function<void(UISlider&, const float&)> cb) { onTick = std::move(cb); return *this; }
+    UIProgressBar& setRange(float minVal, float maxVal) { minValue = minVal; maxValue = maxVal; setValue(value); return *this; }
+    UIProgressBar& setValue(float v) { value = std::clamp(v, minValue, maxValue); 
+										if (boundValue) *boundValue = value; 
+										if (onChange) onChange(value); 
+										intr_value.setValue(value);
+										return *this; }
+    UIProgressBar& setOnChange(std::function<void(float)> cb) { onChange = std::move(cb); return *this; }
+    UIProgressBar& setBoundValue(float* bound) { boundValue = bound; if (bound) setValue(*bound); return *this; }
+    UIProgressBar& setShowValue(bool show) { showValue = show; return *this; }
+    UIProgressBar& setOnTick(std::function<void(UIProgressBar&, const float&)> cb) { onTick = std::move(cb); return *this; }
 
-	float getValue() {return value;}
+	float getValue(){return value;}
 
 	// --- Drawing ---
 	void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
@@ -68,32 +67,12 @@ public:
 		innerTrack.setFillColor(sf::Color(80, 200, 80, 255));
 		target.draw(innerTrack, states);
 
-		// --- Slider Handle ---
-		sf::Vector2f handleSize;
-		handleSize.x = e_size.x * 0.05f;
-		handleSize.y = e_size.y * 0.5f;
-		
-		float handleX = e_position.x + t * e_size.x - handleSize.x / 2.f;
-		float handleY = e_position.y + (e_size.y - handleSize.y) / 2.f;
-		sf::RectangleShape handle(handleSize);
-		handle.setPosition(handleX, handleY);
-
-		sf::Color handleColor = (hovered || dragging) ? sf::Color(100, 180, 255) : sf::Color(200, 200, 200);
-		if (dragging) {
-			handleColor.r = std::min(255, handleColor.r + 30);
-			handleColor.g = std::min(255, handleColor.g + 30);
-			handleColor.b = std::min(255, handleColor.b + 30);
-		}
-		handle.setFillColor(handleColor);
-		handle.setOutlineColor(borderColor);
-		handle.setOutlineThickness(borderThickness);
-		target.draw(handle, states);
-
 		// --- Draw Value Text in the center of the slider ---
 		if (showValue) {
 			sf::Text txt;
 			std::stringstream ss;
-			ss << std::fixed << std::setprecision(2) << value;
+			float t = (value - minValue) / (maxValue - minValue) * 100;
+			ss << std::fixed << std::setprecision(2) << t;
 			txt.setString(ss.str());
 
 			txt.setFont(font);
@@ -131,19 +110,6 @@ public:
 
     void HandleEvent(const UIEvent& event) override {
         if (!enabled) return;
-        if (event.type == UIEventType::MouseMove) {
-            hovered = contains(event.mousePos);
-            if (dragging) {
-                updateValueFromMouse(event.mousePos.x);
-            }
-        } else if (event.type == UIEventType::MouseDown) {
-            if (contains(event.mousePos)) {
-                dragging = true;
-                updateValueFromMouse(event.mousePos.x);
-            }
-        } else if (event.type == UIEventType::MouseUp) {
-            dragging = false;
-        }
     }
 
     void Update(const float dt) override {
@@ -167,15 +133,12 @@ private:
     float minValue = 0.f, maxValue = 100.f, value = 0.f, step = 1.f;
     float* boundValue = nullptr;
     bool showValue = true;
-    bool dragging = false;
-    bool hovered = false;
     sf::Color borderColor = sf::Color::Black;
-    float borderThickness = 2.f;
     sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
     sf::Color textColor = sf::Color::Black;
     unsigned int textSize = 18;
     std::function<void(float)> onChange;
-    std::function<void(UISlider&, const float&)> onTick;
+    std::function<void(UIProgressBar&, const float&)> onTick;
 
-	Interpolated<float> intr_value;	//intr prefix for "interpolated"
+	Interpolated<float> intr_value;
 };

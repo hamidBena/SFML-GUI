@@ -78,6 +78,7 @@ public:
 
 	UIButton& setEnable(bool en) {
 		enabled = en;
+		markLayoutDirty();
 		return *this;
 	}
 

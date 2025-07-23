@@ -28,11 +28,11 @@ public:
 
     LayoutAnchor anchor = LayoutAnchor::TopLeft;
     LayoutType layoutType = LayoutType::Relative;
-	SizeType sizeType = SizeType::Absolute;
+	SizeType sizeType = SizeType::FitContent;
 
     std::weak_ptr<UIElement> parent;
 
-    sf::Vector2f e_padding = {0, 0};
+    sf::Vector2f e_padding = {10, 10};
 
     float borderThickness = 2.f;
     sf::Color borderColor = sf::Color::Black;

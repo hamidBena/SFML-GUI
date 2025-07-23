@@ -7,7 +7,7 @@
 class UILabel : public UILeaf {
 public:
     UILabel(const std::string& name = defaultName()) : UILeaf(name) {
-		e_fillcolor = sf::Color(60, 100, 63, 1);
+		e_fillcolor = sf::Color(60, 100, 63, 0);
 		textColor = sf::Color(230, 230, 230, 255);
 		borderColor = sf::Color(20, 20, 20, 255);
 		sizeType = SizeType::FitContent;
@@ -22,6 +22,7 @@ public:
     }
     UILabel& setSize(const sf::Vector2f& size) {
         e_size = size;
+		intr_size.setValue(e_size);
 		markLayoutDirty();
         return *this;
     }
@@ -78,6 +79,7 @@ public:
 
 	UILabel& setEnable(bool en) {
 		enabled = en;
+		markLayoutDirty();
 		return *this;
 	}
 
@@ -107,7 +109,7 @@ public:
 
 		// Draw background (if alpha > 0)
 		if (e_fillcolor.a > 0) {
-			sf::RectangleShape rect(e_size);
+			sf::RectangleShape rect(intr_size);
 			rect.setPosition(e_position);
 			rect.setFillColor(e_fillcolor);
 			rect.setOutlineColor(borderColor);
@@ -183,6 +185,8 @@ public:
             e_size.x = text.getLocalBounds().width + 15;
             e_size.y = text.getLocalBounds().height + 20;
         }
+
+		intr_size.setValue(e_size);
     }
 
 private:
@@ -194,4 +198,6 @@ private:
 	unsigned int decimals = 2;
 
 	std::function<void(const float)> onTick;
+
+	Interpolated<sf::Vector2f> intr_size;
 };

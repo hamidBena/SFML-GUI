@@ -10,6 +10,9 @@ public:
 		e_fillcolor = sf::Color(70, 120, 70, 205);
 		borderColor = sf::Color(20, 20, 20, 255);
 		textColor = sf::Color(249, 249, 251, 255);
+
+		e_padding = {0,0};
+		placeholder = "Input here...";
 		placeholderColor = sf::Color(242, 242, 247, 170);
 	}
 
@@ -17,7 +20,7 @@ public:
 
     // --- Standard setters
     UITextField& setOffset(const sf::Vector2f& pos) { e_offset = pos; markLayoutDirty(); return *this; }
-    UITextField& setSize(const sf::Vector2f& size) { e_size = size; markLayoutDirty(); return *this; }
+    UITextField& setSize(const sf::Vector2f& size) { e_size = size; markLayoutDirty(); intr_size.setValue(e_size); return *this; }
     UITextField& setFillColor(const sf::Color& color) { e_fillcolor = color; return *this; }
     UITextField& setAnchor(LayoutAnchor anch) { anchor = anch; markLayoutDirty(); return *this; }
     UITextField& setLayoutType(LayoutType type) { layoutType = type; markLayoutDirty(); return *this; }
@@ -36,6 +39,7 @@ public:
     }
 	UITextField& setEnable(bool en) {
 		enabled = en;
+		markLayoutDirty();
 		return *this;
 	}
 	UITextField& setVisible(bool vis) {
@@ -93,7 +97,7 @@ public:
             bg.b = std::min(255, bg.b + 30);
         }
 
-        sf::RectangleShape rect(e_size);
+        sf::RectangleShape rect(intr_size);
         rect.setPosition(e_position);
         rect.setFillColor(bg);
         rect.setOutlineColor(border);
@@ -217,6 +221,8 @@ public:
 				e_size.y = parentArea.y * (e_size.y / 100.f);
 			}
 		}
+
+		intr_size.setValue(e_size);
     }
 
     void HandleEvent(const UIEvent& event) override {
@@ -386,4 +392,6 @@ private:
 	std::vector<std::string> undoStack;
 	std::vector<std::string> redoStack;
 	float lastEditTime = 0.f;
+
+	Interpolated<sf::Vector2f> intr_size;
 };

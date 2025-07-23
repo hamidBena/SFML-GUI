@@ -10,6 +10,9 @@ public:
 		e_fillcolor = sf::Color(75, 75, 70, 230);
 		borderColor = sf::Color(58, 58, 60, 180);
 		headerColor = sf::Color(100, 200, 90, 255);
+
+		spacing = 10.f;
+		headerTitle = "List Menu";
 	}
 
     // Builder setters
@@ -20,6 +23,7 @@ public:
     }
     UIList& setSize(const sf::Vector2f& size) {
         e_size = size;
+		intr_size.setValue(e_size);
 		markLayoutDirty();
         return *this;
     }
@@ -62,6 +66,7 @@ public:
 
 	UIList& setEnable(bool en) {
 		enabled = en;
+		markLayoutDirty();
 		return *this;
 	}
 
@@ -74,6 +79,16 @@ public:
 		spacing = space;
 		markLayoutDirty();
 		return *this;
+	}
+
+	UIList& setHorizontal(bool hor) {
+		is_horizontal = hor;
+		markLayoutDirty();
+		return *this;
+	}
+
+	bool isHorizontal() {
+		return is_horizontal;
 	}
 
 	UIList& setOnTick(std::function<void(UIList&, const float)> cb) { onTick = std::move(cb); return *this; }
@@ -90,7 +105,7 @@ public:
 		if(!visible) return;
 
         // main background
-        sf::RectangleShape rect(e_size);
+        sf::RectangleShape rect(intr_size.getValue());
         rect.setPosition(e_position);
         rect.setFillColor(e_fillcolor);
         rect.setOutlineColor(sf::Color::Black);
@@ -103,7 +118,7 @@ public:
             headerBarColor.r = static_cast<sf::Uint8>(headerBarColor.r * 0.7f);
             headerBarColor.g = static_cast<sf::Uint8>(headerBarColor.g * 0.7f);
             headerBarColor.b = static_cast<sf::Uint8>(headerBarColor.b * 0.7f);
-            sf::RectangleShape headerRect({e_size.x, headerHeight});
+            sf::RectangleShape headerRect({intr_size.getValue().x, headerHeight});
             headerRect.setPosition(e_position.x, e_position.y - headerHeight);
             headerRect.setFillColor(headerBarColor);
             headerRect.setOutlineColor(sf::Color::Black);
@@ -165,13 +180,16 @@ public:
 
 		interpolated_position = e_position;
 
-		float currentY;
+		sf::Vector2f current_p;
         if (sizeType == SizeType::FitContent) {
-			currentY = e_position.y + e_padding.y;
+			current_p = e_position + e_padding;
 			for (auto& child : children) {
-				child->CalculateLayout();
-				child->e_position.y = currentY;
-				currentY += child->e_size.y + spacing; // Stack children vertically with spacing
+				if(child->enabled){
+					child->CalculateLayout();
+					if(is_horizontal) child->e_position.x = current_p.x;
+					else child->e_position.y = current_p.y;
+					current_p += child->e_size + sf::Vector2f(spacing, spacing);
+				}
 			}
 			
 			sf::Text headerText;
@@ -198,12 +216,15 @@ public:
             }
         }
 
-		currentY = e_position.y + e_padding.y;
+		intr_size.setValue(e_size);
+
+		current_p = e_position + e_padding;
         for (auto& child : children) {
             child->CalculateLayout();
 
-			child->e_position.y = currentY;
-			currentY += child->e_size.y + spacing;
+			if(is_horizontal) child->e_position.x = current_p.x;
+			else child->e_position.y = current_p.y;
+			current_p += child->e_size + sf::Vector2f(spacing, spacing);
         }
     }
 
@@ -228,9 +249,9 @@ private:
     float headerHeight = 30.f;
     sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
 
-    // --- Dragging state ---
-    bool dragging = false;
-    sf::Vector2f dragOffset; // Mouse offset from top-left of root when drag starts
+    bool is_horizontal = false;
 
     std::function<void(UIList&, const float dt)> onTick;
+
+	Interpolated<sf::Vector2f> intr_size;
 };

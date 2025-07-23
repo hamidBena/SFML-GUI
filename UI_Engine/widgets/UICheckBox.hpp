@@ -63,6 +63,12 @@ public:
         return *this;
     }
 
+	UICheckBox& setEnable(bool en){
+		enabled = en;
+		markLayoutDirty();
+		return *this;
+	}
+
     UICheckBox& setChecked(bool state) {
         checked = state;
         return *this;
@@ -85,7 +91,7 @@ public:
 		if (!visible) return;
 
 		// Draw checkbox box
-		sf::RectangleShape box(e_size);
+		sf::RectangleShape box(sf::Vector2f(e_size.y, e_size.y));
 		box.setPosition(e_position);
 
 		sf::Color fillColor = e_fillcolor;
@@ -102,8 +108,8 @@ public:
 		// Draw check mark if checked
 		if (checked) {
 			sf::RectangleShape mark;
-			mark.setSize({e_size.x * 0.8f, e_size.y * 0.8f});
-			mark.setPosition(e_position.x + e_size.x * 0.1f, e_position.y + e_size.y * 0.1f);
+			mark.setSize({e_size.y * 0.8f, e_size.y * 0.8f});
+			mark.setPosition(e_position.x + e_size.y * 0.1f, e_position.y + e_size.y * 0.1f);
 
 			// High-contrast mark color
 			float lum = 0.299f * fillColor.r + 0.587f * fillColor.g + 0.114f * fillColor.b;
@@ -117,7 +123,7 @@ public:
 		label.setCharacterSize(textSize);
 		label.setFillColor(textColor);
 		label.setString(labelText);
-		label.setPosition(e_position.x + e_size.x + labelOffset.x,
+		label.setPosition(e_position.x + e_size.y + labelOffset.x,
 						e_position.y + (e_size.y - label.getLocalBounds().height) / 2.f - label.getLocalBounds().top);
 		target.draw(label, states);
 	}
@@ -133,19 +139,14 @@ public:
                 e_position = e_offset;
             }
         }
-        // ... handle other layout types as needed
-
-        // Keep default size if not set
-        if (e_size == sf::Vector2f{0,0}) {
-            float side = textSize;
-            e_size = {side, side};
-        }
 
         // Prepare label
         label.setFont(font);
         label.setCharacterSize(textSize);
         label.setFillColor(textColor);
         label.setString(labelText);
+
+		e_size.x = label.getLocalBounds().width + labelOffset.x + e_size.y;
     }
 
 	void HandleEvent(const UIEvent& event) override {

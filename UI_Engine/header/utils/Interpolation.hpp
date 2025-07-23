@@ -3,8 +3,9 @@
 #include <chrono>
 
 enum class InterpolationType {
-	Linear,
-	easeInOutElastic
+	linear,
+	easeInOutElastic,
+	easeOutCubic
 };
 
 inline float easeInOutElastic(float x) {
@@ -19,15 +20,23 @@ inline float easeInOutElastic(float x) {
         return 0.5f * std::pow(2.0f, -20.0f * x + 10.0f) * std::sin((20.0f * x - 11.125f) * c5) + 1.0f;
 }
 
+inline float easeOutCubic(float x) {
+    return 1 - std::pow(1 - x, 3);
+}
+
+inline float linear(float x) {
+	return x;
+}
+
 template<typename T>
 struct Interpolated{
 	T start{};
 	T end{};
 
 	float startTime{};
-	float speed{2.0f};
+	float speed{6.0f};
 
-	InterpolationType InterpolationType{InterpolationType::easeInOutElastic};
+	InterpolationType InterpolationType{InterpolationType::linear};
 
 	explicit Interpolated(T const& initialValue = {}) : start(initialValue), end(start) {}
 
@@ -40,15 +49,17 @@ struct Interpolated{
 	float GetElapsedTime() const {
 		float t = (GetCurrentTime() - startTime) * speed;
 		switch(InterpolationType){
-			case InterpolationType::Linear:
-				return t;
 			case InterpolationType::easeInOutElastic:
 				return easeInOutElastic(t);
+			case InterpolationType::easeOutCubic:
+				return easeOutCubic(t);
+			default:
+				return linear(t);
 		}
 	}
 
 	void setValue(const T& value) {
-		start = end;
+		start = getValue();
 		end = value;
 		startTime = GetCurrentTime();
 	}

@@ -5,52 +5,70 @@
 
 int main() {
     // Create a window
-    sf::RenderWindow window(sf::VideoMode(2000, 1200), "SFML Example");
+    sf::RenderWindow window(sf::VideoMode(2000, 1200), "SFML Example", sf::Style::Default);
     window.setFramerateLimit(100);
 
-    sf::View view(sf::FloatRect(0, 0, 2000, 1200));  // <--- Add this
-    window.setView(view);                            // <--- And this
-
     std::string synced_string;
+	float loading_value = 0.f;
 
     GUI UI;
     auto Menu1 = UI.CreateRoot();
-    Menu1->setOffset({800, 100})
-         .setPadding({10, 15})
-         .setSize({500, 500})
-         .setLayoutType(LayoutType::Static)
-         .setSizeType(SizeType::Absolute)
-         .setHeaderTitle("Main Menu");
+    Menu1->setOffset({200, 100});
 
     auto List1 = UI.CreateList();
-    List1->setOffset({0, 30})
-         .setSize({400, 400})
-         .setPadding({10, 10})
-         .setLayoutType(LayoutType::Relative)
-         .setSizeType(SizeType::FitContent)
-         .setHeaderTitle("List1")
-         .setHeaderHeight(30.f)
-         .setSpacing(20.f);
+    List1->setOffset({100, 30});
 
     auto InputField = UI.CreateTextField();
-    InputField->setSizeType(SizeType::FitContent)
-              .setPlaceholder("name here...")
-              .setBoundValue(&synced_string);
+    InputField->setBoundValue(&synced_string);
 
 	auto Button = UI.CreateButton();
+	Button->setLabel("Increment")
+	.setOnClick([&loading_value, &List1](){
+		loading_value += 1.f;
+		if(loading_value > 20.f){
+			loading_value = 5.f;
+		} 
+		List1->setSpacing(loading_value);
+	});
+
+	auto swap_button = UI.CreateButton();
+	swap_button->setLabel("Swap")
+	.setFillColor({150,160,0})
+	.setOnClick([&List1](){
+		List1->setHorizontal(!List1->isHorizontal());
+	});
+
 	auto Label = UI.CreateLabel();
 	Label->setText("hello!\nthis is a label\nwith support for multiline + dynamic sizing!");
+
 	auto Slider = UI.CreateSlider();
+	Slider->setBoundValue(&loading_value)
+	.setRange(5.f, 20.f);
 
 	auto CheckBox = UI.CreateUICheckBox();
 
+	auto PrgBar = UI.CreateUIProgressBar();
+	PrgBar->setBoundValue(&loading_value)
+	.setRange(0.f, 20.f);
+
     List1->AddChild(InputField);
 	List1->AddChild(CheckBox);
+	List1->AddChild(swap_button);
 	List1->AddChild(Button);
 	List1->AddChild(Slider);
+	List1->AddChild(PrgBar);
 	List1->AddChild(Label);
     Menu1->AddChild(List1);
     
+	auto UI_en = UI.CreateUICheckBox();
+	UI_en->setLabel("Enable UI")
+	.setOnToggle([&List1](bool en){
+		List1->setEnable(en);
+	});
+
+	Menu1->AddChild(UI_en);
+
+
     sf::Clock clock;
 
     while (window.isOpen()) {
@@ -60,9 +78,7 @@ int main() {
                 window.close();
                 
             if (event.type == sf::Event::Resized) {
-                view.setSize(static_cast<float>(event.size.width), static_cast<float>(event.size.height));
-                view.setCenter(view.getSize() / 2.f);
-                window.setView(view);
+				window.create(sf::VideoMode(event.size.width, event.size.height), "SFML Example");
 				Menu1->markChildrenDirty();
             }
 

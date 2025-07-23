@@ -14,6 +14,12 @@ std::shared_ptr<UIList> GUI::CreateList() {
     return list;
 }
 
+std::shared_ptr<UIGrid> GUI::CreateGrid() {
+    std::shared_ptr<UIGrid> Grid;
+    Grid = std::make_shared<UIGrid>();
+    return Grid;
+}
+
 
 std::shared_ptr<UIButton> GUI::CreateButton() {
 	auto button = std::make_shared<UIButton>();
@@ -38,6 +44,11 @@ std::shared_ptr<UISlider> GUI::CreateSlider() {
 std::shared_ptr<UICheckBox> GUI::CreateUICheckBox() {
 	auto Chkbx = std::make_shared<UICheckBox>();
 	return Chkbx;
+}
+
+std::shared_ptr<UIProgressBar> GUI::CreateUIProgressBar() {
+	auto PrgsBr = std::make_shared<UIProgressBar>();
+	return PrgsBr;
 }
 
 std::shared_ptr<UIElement> GUI::GetElementByName(const std::string& name) {

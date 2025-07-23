@@ -9,24 +9,28 @@
 
 #include "../widgets/container/UIRoot.hpp"
 #include "../widgets/container/UIList.hpp"
+#include "../widgets/container/UIGrid.hpp"
 
 #include "../widgets/UIButton.hpp"
 #include "../widgets/UILabel.hpp"
 #include "../widgets/UITextField.hpp"
 #include "../widgets/UISlider.hpp"
 #include "../widgets/UICheckBox.hpp"
+#include "../widgets/UIProgressBar.hpp"
 #include "core/UIEvent.hpp"
 
 class GUI {
 public:
     std::shared_ptr<UIRoot> CreateRoot();
     std::shared_ptr<UIList> CreateList();
+    std::shared_ptr<UIGrid> CreateGrid();
 
     std::shared_ptr<UIButton> CreateButton();
     std::shared_ptr<UILabel> CreateLabel();
     std::shared_ptr<UITextField> CreateTextField();
     std::shared_ptr<UISlider> CreateSlider();
     std::shared_ptr<UICheckBox> CreateUICheckBox();
+    std::shared_ptr<UIProgressBar> CreateUIProgressBar();
 
     std::shared_ptr<UIElement> GetElementByName(const std::string& name);
 
