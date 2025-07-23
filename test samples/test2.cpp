@@ -17,9 +17,7 @@ int main() {
 		   .setSize({500, 500})
 		   .setFillColor({250,250,50,50})
 		   .setLayoutType(LayoutType::Static)
-		   .setSizeType(SizeType::FitContent)
-		   .setHeaderTitle("Main Menu");
-
+		   .setSizeType(SizeType::FitContent);
 
 	auto List1 = UI.CreateList();
 	List1->setOffset({0, 30})
@@ -94,8 +92,7 @@ int main() {
 		   .setSize({500, 500})
 		   .setFillColor({0,250,250,50})
 		   .setLayoutType(LayoutType::Static)
-		   .setSizeType(SizeType::FitContent)
-		   .setHeaderTitle("second Menu");
+		   .setSizeType(SizeType::FitContent);
 	Menu2->AddChild(List2);
 
 	sf::Clock clock;

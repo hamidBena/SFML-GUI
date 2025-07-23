@@ -4,7 +4,7 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <functional>
 
-struct ShapeComponents {
+struct UIRootComponents {
     sf::RectangleShape background;
     std::optional<sf::RectangleShape> headerBar;
     std::optional<sf::Text> headerText;
@@ -191,16 +191,17 @@ public:
             sf::FloatRect headerbounds = shapes.headerBar->getGlobalBounds();
             sf::FloatRect togglebounds = shapes.toggleButton.getGlobalBounds();
             if (event.type == UIEventType::MouseDown && event.mouseButton == 0) {
-                if (headerbounds.contains(event.mousePos)) {
-                    dragging = true;
-                    dragOffset = event.mousePos - e_position;
-                }else if (togglebounds.contains(event.mousePos)){
+				if (togglebounds.contains(event.mousePos)){
 					for(auto& child : children){
 						child->enabled = !child->enabled;
 					}
 					markLayoutDirty();
 					return;
 				}
+                if (headerbounds.contains(event.mousePos)) {
+                    dragging = true;
+                    dragOffset = event.mousePos - e_position;
+                }
             } else if (event.type == UIEventType::MouseUp && event.mouseButton == 0) {
                 dragging = false;
             } else if (event.type == UIEventType::MouseMove) {
@@ -235,8 +236,8 @@ private:
 	Interpolated<sf::Vector2f> intr_size;
 
 private:
-	ShapeComponents buildShapes() const {
-		ShapeComponents shapes;
+	UIRootComponents buildShapes() const {
+		UIRootComponents shapes;
 
 		// --- Background ---
 		shapes.background.setSize(intr_size.getValue());

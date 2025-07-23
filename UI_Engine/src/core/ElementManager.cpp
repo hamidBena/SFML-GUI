@@ -51,14 +51,6 @@ std::shared_ptr<UIProgressBar> GUI::CreateUIProgressBar() {
 	return PrgsBr;
 }
 
-std::shared_ptr<UIElement> GUI::GetElementByName(const std::string& name) {
-    for (const auto& root : UIRoots) {
-        auto found = FindElementRecursive(root, name);
-        if (found) return found;
-    }
-    return nullptr;
-}
-
 void GUI::RemoveElementByName(const std::string& name) {
     UIRoots.erase(
         std::remove_if(UIRoots.begin(), UIRoots.end(),
@@ -69,30 +61,16 @@ void GUI::RemoveElementByName(const std::string& name) {
     );
 }
 
-std::shared_ptr<UIElement> GUI::FindElementRecursive(const std::shared_ptr<UIElement>& element, const std::string& name) {
-    if (element->id == name) {
-        return element;
-    }
-    // Only UIContainer and derived types have children
-    auto container = std::dynamic_pointer_cast<UIContainer>(element);
-    if (container) {
-        for (const auto& child : container->children) {
-            auto found = FindElementRecursive(child, name);
-            if (found) return found;
-        }
-    }
-    return nullptr;
-}
-
 void GUI::draw(sf::RenderTarget& target, sf::RenderStates states){
 	sf::View oldView = target.getView();
-	sf::View screenSpaceView;
-	screenSpaceView.setSize(target.getSize().x, target.getSize().y);
-	screenSpaceView.setCenter(target.getSize().x / 2.f, target.getSize().y / 2.f);
+	sf::Vector2u winSize = target.getSize();
+	sf::View uiView = sf::View(sf::FloatRect(0, 0, static_cast<float>(winSize.x), static_cast<float>(winSize.y)));
 
-	target.setView(screenSpaceView);
+	target.setView(uiView);
+
 	for(auto& root : UIRoots) root->Render(target, states);
-	target.setView(oldView);
+	// Restore the previous view (world-space)
+    target.setView(oldView);
 }
 
 void GUI::HandleEvent(const UIEvent& event) {

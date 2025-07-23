@@ -76,7 +76,6 @@ public:
     UIElement* AddChild(std::shared_ptr<UIElement> child) override { return nullptr; }
 
     void Render(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) override {
-		
         DrawSelf(target, states);
     }
 	
@@ -87,7 +86,6 @@ public:
 class UIContainer : public UIElement {
 public:
     std::vector<std::shared_ptr<UIElement>> children;
-    float spacing = 0.f;
 
     UIContainer(const std::string& id);
     UIElement* AddChild(std::shared_ptr<UIElement> child) override;

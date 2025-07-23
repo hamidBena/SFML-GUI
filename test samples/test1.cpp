@@ -6,6 +6,7 @@
 int main() {
     // Create a window
     sf::RenderWindow window(sf::VideoMode(2000, 1200), "SFML gui");
+	window.setFramerateLimit(60);
 	float counter = 0;
 	std::string counter_string;
 	float avg_fps;

@@ -32,8 +32,6 @@ public:
     std::shared_ptr<UICheckBox> CreateUICheckBox();
     std::shared_ptr<UIProgressBar> CreateUIProgressBar();
 
-    std::shared_ptr<UIElement> GetElementByName(const std::string& name);
-
     void RemoveElementByName(const std::string& name);
 
 	void draw(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default);
@@ -54,6 +52,4 @@ public:
 
 private:
     std::vector<std::shared_ptr<UIRoot>> UIRoots;
-	
-    std::shared_ptr<UIElement> FindElementRecursive(const std::shared_ptr<UIElement>& element, const std::string& name);
 };

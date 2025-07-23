@@ -4,7 +4,7 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <functional>
 
-struct Components {
+struct UIListComponents {
 	sf::RectangleShape background;
 	std::optional<sf::RectangleShape> headerBar;
 	std::optional<sf::Text> headerText;
@@ -110,9 +110,9 @@ public:
 	}
 
     void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if(!visible) return;
+		if(!visible || !enabled) return;
 
-		Components shapes = buildShapes();
+		UIListComponents shapes = buildShapes();
 		target.draw(shapes.background, states);
 		if (shapes.headerBar)     target.draw(*shapes.headerBar, states);
 		if (shapes.headerText)    target.draw(*shapes.headerText, states);
@@ -125,6 +125,8 @@ public:
 
 		if(!layoutDirty) return;
 		layoutDirty = false;
+
+		auto shapes = buildShapes();
 
         if(layoutType == LayoutType::Static) {
             e_position = e_offset;
@@ -154,12 +156,7 @@ public:
 				current_p += child->e_size + sf::Vector2f(spacing, spacing);
 			}
 			
-			sf::Text headerText;
-            headerText.setString(headerTitle);
-            headerText.setCharacterSize(24);
-            headerText.setFillColor(sf::Color::White);
-            headerText.setFont(font);
-            sf::Vector2f maxSize = headerText.getLocalBounds().getSize() + e_padding + sf::Vector2f(20,0);
+            sf::Vector2f maxSize = shapes.headerText->getLocalBounds().getSize() + e_padding + sf::Vector2f(20,0);
             for (const auto& child : children) {
 				if(child->enabled){
 					sf::Vector2f childBR = child->e_position + child->e_size - e_position;
@@ -190,13 +187,6 @@ public:
 			else child->e_position.y = current_p.y;
 			current_p += child->e_size + sf::Vector2f(spacing, spacing);
         }
-    }
-
-    UIElement* AddChild(std::shared_ptr<UIElement> child) override {
-        children.push_back(child);
-        child->parent = shared_from_this();
-		markLayoutDirty();
-        return child.get();
     }
 
     void HandleEvent(const UIEvent& event) override {
@@ -235,12 +225,14 @@ private:
     bool is_horizontal = false;
 	bool is_hovered = false;
 
+	float spacing = 5.f;
+
     std::function<void(UIList&, const float dt)> onTick;
 	Interpolated<sf::Vector2f> intr_size;
 
 private:
-	Components buildShapes() const {
-		Components shapes;
+	UIListComponents buildShapes() const {
+		UIListComponents shapes;
 
 		// --- Background ---
 		shapes.background.setSize(intr_size.getValue());
