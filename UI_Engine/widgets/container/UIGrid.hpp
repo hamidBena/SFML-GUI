@@ -190,7 +190,6 @@ public:
     void HandleEvent(const UIEvent& event) override {
 		if (!enabled) return;
 		auto shapes = buildShapes();
-        // dragging by header (now above the root)
         if (headerHeight > 0.f) {
             sf::FloatRect headerbounds = shapes.headerBar->getGlobalBounds();
             sf::FloatRect togglebounds = shapes.toggleButton.getGlobalBounds();
