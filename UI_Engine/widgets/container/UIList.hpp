@@ -14,286 +14,205 @@ struct UIListComponents {
 
 class UIList : public UIContainer {
 public:
-    UIList(const std::string& name = defaultName()) : UIContainer(name) {
-		e_fillcolor = sf::Color(75, 75, 70, 230);
-		borderColor = sf::Color(58, 58, 60, 180);
-		headerColor = sf::Color(100, 200, 90, 255);
+    UIList() {
+		setFillColor(sf::Color(60, 60, 63, 230));
+		setBorderColor(sf::Color(58, 58, 60, 180));
+		setHeaderColor(sf::Color(90, 190, 90, 255));
+		setHeaderHeight(30);
+
+		e_padding = {10,10};
 
 		spacing = 10.f;
 		headerTitle = "List Menu";
 	}
 
-    // Builder setters
+	// Standard setters
     UIList& setOffset(const sf::Vector2f& pos) {
         e_offset = pos;
-		markLayoutDirty();
         return *this;
     }
     UIList& setSize(const sf::Vector2f& size) {
         e_size = size;
-		intr_size.setValue(e_size);
-		markLayoutDirty();
+		intr_size = e_size;
         return *this;
     }
-    UIList& setFillColor(const sf::Color& color) {
+	UIList& setPadding(const sf::Vector2f& pad) {
+		e_padding = pad;
+		return *this;
+	}
+	UIList& setFillColor(const sf::Color& color) {
         e_fillcolor = color;
         return *this;
     }
-    UIList& setAnchor(LayoutAnchor anch) {
-        anchor = anch;
+	UIList& setBorderColor(const sf::Color& color) {
+        e_borderColor = color;
         return *this;
     }
-    UIList& setLayoutType(LayoutType type) {
-        layoutType = type;
-		markLayoutDirty();
+	UIList& setBorderThickness(float thickness) {
+		e_borderThickness = thickness;
         return *this;
     }
 	UIList& setSizeType(SizeType type) {
 		sizeType = type;
-		markLayoutDirty();
 		return *this;
 	}
-	UIList& setPadding(const sf::Vector2f& pad) {
-		e_padding = pad;
-		markLayoutDirty();
-		return *this;
-	}
-	UIList& setHeaderTitle(const std::string& title) {
-        headerTitle = title;
+	UIList& setLayoutType(LayoutType type) {
+        layoutType = type;
         return *this;
     }
-    UIList& setHeaderColor(const sf::Color& color) {
-        headerColor = color;
-        return *this;
-    }
-    UIList& setHeaderHeight(float height) {
-        headerHeight = height;
-		markLayoutDirty();
-        return *this;
-    }
-
 	UIList& setEnable(bool en) {
 		enabled = en;
-		markLayoutDirty();
 		return *this;
 	}
-
 	UIList& setVisible(bool vis) {
 		visible = vis;
 		return *this;
 	}
 
-	UIList& setSpacing(float space) {
-		spacing = space;
-		markLayoutDirty();
+	// Container setters
+	UIList& setHeaderTitle(std::string title){headerTitle = title; return *this;}
+	UIList& setHeaderColor(const sf::Color& color){headerColor = color; return *this;}
+	UIList& setHeaderHeight(float height){headerHeight = height; intr_headerHeight = height; return *this;}
+	UIList& setChildrenVisible(bool vis){childrenVisible = vis; return *this;}
+
+	// Container override functions
+	void UpdateHeaderSize() override {headerSize = shapes.headerText->getLocalBounds().getSize();}
+
+	// Widget specific setters
+	UIList& setSpacing(float sp){
+		spacing = sp;
+		return *this;
+	}
+	UIList& setHorizontal(bool hr){
+		horizontal = hr;
 		return *this;
 	}
 
-	UIList& setHorizontal(bool hor) {
-		is_horizontal = hor;
-		markLayoutDirty();
-		return *this;
-	}
-
-	bool isHorizontal() {
-		return is_horizontal;
-	}
-
-	UIList& setOnTick(std::function<void(UIList&, const float)> cb) { onTick = std::move(cb); return *this; }
-
-	void Update(const float dt) override {
-		if(!enabled) return;
-		for (auto& child : children) {
-			child->Update(dt);
-		}
-		if(onTick) onTick(*this, dt);
-	}
-
-    void DrawSelf(sf::RenderTarget& target, sf::RenderStates states) override {
-		if(!visible || !enabled) return;
-
-		UIListComponents shapes = buildShapes();
-		target.draw(shapes.background, states);
-		if (shapes.headerBar)     target.draw(*shapes.headerBar, states);
-		if (shapes.headerText)    target.draw(*shapes.headerText, states);
-		if (shapes.debugTriangle) target.draw(*shapes.debugTriangle, states);
-		target.draw(shapes.toggleButton, states);
-    }
-
-    void CalculateLayout() override {
-		if(!enabled) return;
-
-		if(!layoutDirty) return;
-		layoutDirty = false;
-
-		auto shapes = buildShapes();
-
-        if(layoutType == LayoutType::Static) {
-            e_position = e_offset;
-        } else if(layoutType == LayoutType::Relative) {
-            if (auto parentPtr = parent.lock()) {
-                e_position = parentPtr->e_position + parentPtr->e_padding + e_offset;
-            } else {
-                e_position = e_offset;
-            }
-        } else if(layoutType == LayoutType::Percent) {
-            if (auto parentPtr = parent.lock()) {
-                sf::Vector2f parentSize = parentPtr->e_size - parentPtr->e_padding * 2.0f;
-                e_position.x = parentPtr->e_position.x + parentPtr->e_padding.x + (parentSize.x * (e_offset.x / 100.f));
-                e_position.y = parentPtr->e_position.y + parentPtr->e_padding.y + (parentSize.y * (e_offset.y / 100.f));
-            }
-        } else if(layoutType == LayoutType::Anchor) {
-            e_position = e_offset;
-        }
-
-		sf::Vector2f current_p;
-        if (sizeType == SizeType::FitContent) {
-			current_p = e_position + e_padding;
+	//list layout logic
+	void CalculateLayout() override {
+		updateAccumulatedOffset();
+		PositionPass();
+		if(sizeType == SizeType::FitContent){
 			for (auto& child : children) {
 				child->CalculateLayout();
-				if(is_horizontal) child->e_position.x = current_p.x;
-				else child->e_position.y = current_p.y;
-				current_p += child->e_size + sf::Vector2f(spacing, spacing);
 			}
-			
-            sf::Vector2f maxSize = shapes.headerText->getLocalBounds().getSize() + e_padding + sf::Vector2f(20,0);
-            for (const auto& child : children) {
-				if(child->enabled){
-					sf::Vector2f childBR = child->e_position + child->e_size - e_position;
-					maxSize.x = std::max(maxSize.x, childBR.x);
-					maxSize.y = std::max(maxSize.y, childBR.y);
-				}
-            }
-            e_size = maxSize + e_padding * 2.f;
-        } else if (sizeType == SizeType::FillParent) {
-            if (auto parentPtr = parent.lock()) {
-                e_size = parentPtr->e_size-parentPtr->e_padding*2.f - e_offset;
-            }
-        } else if (sizeType == SizeType::Percent) {
-            if (auto parentPtr = parent.lock()) {
-                auto parentArea = parentPtr->e_size - parentPtr->e_padding*2.f;
-                e_size.x = parentArea.x * (e_size.x / 100.f);
-                e_size.y = parentArea.y * (e_size.y / 100.f);
-            }
-        }
+			EmplaceChildren();
+			SizePass();
+		}else{
+			SizePass();
+			for (auto& child : children) {
+				child->CalculateLayout();
+			}
+		}
+	}
 
-		intr_size.setValue(e_size);
+	void EmplaceChildren(){
+		float currentY = e_position.y + headerHeight*1.5;
+		for(auto& child : children){
+			child->e_position.y = currentY;
+			child->intr_position = child->e_position;
+			currentY += child->e_size.y + spacing;
+		}
+	}
 
-		current_p = e_position + e_padding;
-        for (auto& child : children) {
-            child->CalculateLayout();
 
-			if(is_horizontal) child->e_position.x = current_p.x;
-			else child->e_position.y = current_p.y;
-			current_p += child->e_size + sf::Vector2f(spacing, spacing);
-        }
+
+public:
+    void DrawSelf(sf::RenderTarget& target) override {
+		shapes = buildShapes();
+		target.draw(shapes.background);
+		if (shapes.headerBar)     target.draw(*shapes.headerBar);
+		if (shapes.headerText)    target.draw(*shapes.headerText);
+		if (shapes.debugTriangle) target.draw(*shapes.debugTriangle);
+		target.draw(shapes.toggleButton);
     }
 
-    void HandleEvent(const UIEvent& event) override {
-		if (!enabled) return;
-		auto shapes = buildShapes();
-        if (headerHeight > 0.f) {
+    void HandleWidgetEvent(const UIEvent& event) override {
+		if (headerHeight > 0.f) {
+            sf::FloatRect headerbounds = shapes.headerBar->getGlobalBounds();
             sf::FloatRect togglebounds = shapes.toggleButton.getGlobalBounds();
-            if (event.type == UIEventType::MouseDown && event.mouseButton == 0) {
-                if (togglebounds.contains(event.mousePos)) {
-					for(auto& child : children){
-						child->enabled = !child->enabled;
-					}
-					markLayoutDirty();
-                    return;
-                }
-            }
-			else if (event.type == UIEventType::MouseMove) {
-				if (togglebounds.contains(event.mousePos)) {
-					is_hovered = true;
-                }else{
-					is_hovered = false;
+            if (event.type == UIEventType::MouseDown) {
+				if (auto* data = std::get_if<MouseEventData>(&event.data)){
+					if(togglebounds.contains(data->pos)) {childrenVisible = !childrenVisible; return;}
 				}
 			}
-        }
-        for (auto& child : children) {
-            child->HandleEvent(event);
-        }
+
+			if (event.type == UIEventType::MouseMove){
+				if(auto* data = std::get_if<MouseEventData>(&event.data)){
+					if(togglebounds.contains(data->pos)){
+						toggle_hovered = true;
+					}else{
+						toggle_hovered = false;
+					}
+				}
+			}
+
+			for(auto& child:children){
+				child->HandleEvent(event);
+			}
+		}
     }
 
 private:
-    std::string headerTitle = "";
-    sf::Color headerColor = sf::Color(60, 60, 60);
-    float headerHeight = 30.f;
-    sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
-
-    bool is_horizontal = false;
-	bool is_hovered = false;
-
+    bool horizontal = false;
+	bool toggle_hovered = false;
 	float spacing = 5.f;
 
-    std::function<void(UIList&, const float dt)> onTick;
-	Interpolated<sf::Vector2f> intr_size;
-
+	UIListComponents shapes = buildShapes();
 private:
 	UIListComponents buildShapes() const {
 		UIListComponents shapes;
 
-		// --- Background ---
-		shapes.background.setSize(intr_size.getValue());
-		shapes.background.setPosition(e_position);
-		shapes.background.setFillColor(e_fillcolor);
-		shapes.background.setOutlineColor(sf::Color::Black);
-		shapes.background.setOutlineThickness(2.f);
+		sf::Vector2f toggleButtonSize = {25, 8 };
 
 		// --- Header ---
 		if (headerHeight > 0.f) {
+			// Slightly darkened header bar
 			sf::Color darker = headerColor;
 			darker.r = static_cast<sf::Uint8>(darker.r * 0.7f);
 			darker.g = static_cast<sf::Uint8>(darker.g * 0.7f);
 			darker.b = static_cast<sf::Uint8>(darker.b * 0.7f);
 
-			sf::RectangleShape headerRect({intr_size.getValue().x, headerHeight});
-			headerRect.setPosition(e_position.x, e_position.y - headerHeight);
+			sf::RectangleShape headerRect({intr_size.getValue().x, intr_headerHeight.getValue()});
+			headerRect.setPosition(intr_position.getValue());
 			headerRect.setFillColor(darker);
-			headerRect.setOutlineColor(sf::Color::Black);
+			headerRect.setOutlineColor(headerBorderColor);
 			headerRect.setOutlineThickness(2.f);
 			shapes.headerBar = headerRect;
 
-			// compute perceived luminance for text color
+			// Text color based on luminance
 			float lum = 0.299f * headerColor.r + 0.587f * headerColor.g + 0.114f * headerColor.b;
 			sf::Color textColor = (lum > 128.f) ? sf::Color::Black : sf::Color::White;
 
 			sf::Text headerText;
 			headerText.setFont(font);
-			headerText.setString(headerTitle);
 			headerText.setCharacterSize(24);
 			headerText.setFillColor(textColor);
+			headerText.setString(headerTitle);
 			headerText.setPosition(
-				e_position.x + headerHeight + 10.f,
-				(e_position.y - headerHeight) +
-				(headerHeight - headerText.getLocalBounds().height) / 2.f -
-				headerText.getLocalBounds().top
+				intr_position.getValue().x + toggleButtonSize.x + 10,//10 for little padding
+				intr_position.getValue().y
 			);
 			shapes.headerText = headerText;
 		}
 
-		// --- Debug marker (if layout dirty) ---
-		if (layoutDirty) {
-			sf::ConvexShape triangle;
-			triangle.setPointCount(3);
-			triangle.setPoint(0, e_position);
-			triangle.setPoint(1, e_position + sf::Vector2f(10, 0));
-			triangle.setPoint(2, e_position + sf::Vector2f(0, 10));
-			triangle.setFillColor(sf::Color::Red);
-			shapes.debugTriangle = triangle;
-		}
+		// --- Background ---
+		shapes.background.setSize({intr_size.getValue().x, intr_size.getValue().y - intr_headerHeight.getValue()});
+		shapes.background.setPosition({intr_position.getValue().x, intr_position.getValue().y + intr_headerHeight.getValue()});
+		shapes.background.setFillColor(e_fillcolor);
+		shapes.background.setOutlineColor(e_borderColor);
+		shapes.background.setOutlineThickness(e_borderThickness);
 
 		sf::RectangleShape toggleButton;
 		toggleButton.setSize(sf::Vector2f(25, 8));
-		toggleButton.setPosition(e_position + sf::Vector2f(5,-headerHeight+10));
+		toggleButton.setPosition(intr_position.getValue().x + 5, intr_position.getValue().y + intr_headerHeight.getValue()/2.f - toggleButtonSize.y/2.f);
 
-		if(is_hovered) toggleButton.setFillColor({100,100,100,200});
+		if(toggle_hovered) toggleButton.setFillColor({100,100,100,200});
 		else toggleButton.setFillColor({50,50,50,200});
 
 		shapes.toggleButton = toggleButton;
 
 		return shapes;
-	}
+	}	
 
 };

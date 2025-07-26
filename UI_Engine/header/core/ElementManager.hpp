@@ -21,10 +21,11 @@
 
 class GUI {
 public:
+	// container creation
     std::shared_ptr<UIRoot> CreateRoot();
     std::shared_ptr<UIList> CreateList();
     std::shared_ptr<UIGrid> CreateGrid();
-
+	//widget creation
     std::shared_ptr<UIButton> CreateButton();
     std::shared_ptr<UILabel> CreateLabel();
     std::shared_ptr<UITextField> CreateTextField();
@@ -32,24 +33,69 @@ public:
     std::shared_ptr<UICheckBox> CreateUICheckBox();
     std::shared_ptr<UIProgressBar> CreateUIProgressBar();
 
-    void RemoveElementByName(const std::string& name);
+	//UI control entry points
+	void draw(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default){
+		sf::View oldView = target.getView();
+		sf::Vector2u winSize = target.getSize();
+		sf::View uiView = sf::View(sf::FloatRect(0, 0, static_cast<float>(winSize.x), static_cast<float>(winSize.y)));
 
-	void draw(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default);
+		target.setView(uiView);
 
-    void HandleEvent(const UIEvent& event);
-
-	void Update(const float dt);
-	void ProcessEvent(const sf::Event& event);
-
-	void AddRoot(std::shared_ptr<UIRoot> root) {
-		UIRoots.push_back(std::move(root));
+		for(auto& root : UIRoots) root->Render(target);
+		
+		target.setView(oldView);
+	}
+    void PassEvent(const UIEvent& event){
+		for (auto& root : UIRoots) {
+			root->HandleEvent(event);
+		}
+	}
+	void Update(const float dt) {
+		for (auto& root : UIRoots) {
+			root->CalculateLayout();
+			root->Update(dt);
+		}
 	}
 
-	const std::vector<std::shared_ptr<UIRoot>>& GetRoots() const {
-		return UIRoots;
+	void HandleEvent(const sf::Event& event, const sf::RenderWindow& window){
+		auto mappedEvent = mapSFEvent(event, window);
+		if(mappedEvent) PassEvent(*mappedEvent);
 	}
-
-
+	
 private:
+	std::optional<UIEvent> mapSFEvent(const sf::Event& sfe, const sf::RenderWindow& window) {
+		switch (sfe.type) {
+			case sf::Event::MouseMoved:
+				return UIEvent{ UIEventType::MouseMove, MouseEventData{ sf::Vector2f(sf::Mouse::getPosition(window)), 0 } };
+
+			case sf::Event::MouseButtonPressed:
+				return UIEvent{ UIEventType::MouseDown, MouseEventData{ sf::Vector2f(sf::Mouse::getPosition(window)), sfe.mouseButton.button } };
+
+			case sf::Event::MouseButtonReleased:
+				return UIEvent{ UIEventType::MouseUp, MouseEventData{ sf::Vector2f(sf::Mouse::getPosition(window)), sfe.mouseButton.button } };
+
+			case sf::Event::TextEntered:
+				return UIEvent{ UIEventType::TextEntered, TextEventData{ static_cast<char>(sfe.text.unicode) } };
+
+			case sf::Event::KeyPressed:
+				return UIEvent{ UIEventType::KeyDown, KeyEventData{
+					sfe.key.code,
+					sfe.key.control,
+					sfe.key.shift,
+					sfe.key.alt
+				}};
+			case sf::Event::KeyReleased:
+				return UIEvent{ UIEventType::KeyUp, KeyEventData{
+					sfe.key.code,
+					sfe.key.control,
+					sfe.key.shift,
+					sfe.key.alt
+				}};
+
+			default:
+				return std::nullopt;
+		}
+	}
+
     std::vector<std::shared_ptr<UIRoot>> UIRoots;
 };

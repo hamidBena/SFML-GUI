@@ -3,83 +3,169 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <functional>
 #include <SFML/Graphics.hpp>
 #include "utils/assetManager.hpp"
 #include "utils/Interpolation.hpp"
 #include "core/UIEvent.hpp"
 
 // Layout enums
-enum class LayoutAnchor { TopLeft, TopRight, BottomLeft, BottomRight, Center };
-enum class LayoutType { Static, Relative, Percent, Anchor };
+enum class LayoutType { Static, Relative, Percent };
 enum class SizeType { Absolute, FitContent, FillParent, Percent };
 
 class UIElement : public std::enable_shared_from_this<UIElement> {
 public:
     inline static int ElementCount = 0;
-
-	sf::Vector2f e_position = {0, 0};
+	//layout
+	sf::Vector2f e_position = {0, 0};			Interpolated<sf::Vector2f> intr_position;
     sf::Vector2f e_offset   = {0, 0};
-    sf::Vector2f e_size     = {150, 50};
+    sf::Vector2f e_size     = {150, 50};		Interpolated<sf::Vector2f> intr_size;
+	sf::Vector2f e_padding = {5, 5};
     sf::Color e_fillcolor = sf::Color::White;
-    std::string id;
+    sf::Color e_borderColor = sf::Color::Black;
+	float e_borderThickness = 2.f;
 
+	sf::Vector2f accumulatedOffset = {0, 0};
+	virtual void updateAccumulatedOffset(){accumulatedOffset = e_position + e_padding;}
+
+	const sf::Vector2f& getPosition() const { return e_position; }
+	const sf::Vector2f& getOffset() const 	{ return e_offset; }
+	const sf::Vector2f& getSize() const 	{ return e_size; }
+	const sf::Vector2f& getPadding() const 	{ return e_padding; }
+	const sf::FloatRect getBounds() const 	{ return sf::FloatRect(e_position, e_size); }
+	const sf::Color& getFillColor() const	{ return e_fillcolor; }
+	const sf::Color& getBorderColor() const { return e_borderColor; }
+	float getBorderThickness() const 		{ return e_borderThickness; }
+
+	//state
 	bool visible = true;
 	bool enabled = true;
 
-    LayoutAnchor anchor = LayoutAnchor::TopLeft;
+	//event states
+	bool hovered = false;
+	float hoverDuration; //for animations 
+	const float getHoverDuation() const { return hoverDuration; }
+
+	//layout config
     LayoutType layoutType = LayoutType::Relative;
 	SizeType sizeType = SizeType::FitContent;
 
+	//standard callbacks
+	std::function<void(UIElement&, const float&)> onTick;
+	std::function<void(UIElement&, const float&)> onHover;
+	std::function<void(UIElement&)> onMouseEnter;
+	std::function<void(UIElement&)> onMouseLeave;
+
+	void setOnTick(std::function<void(UIElement&, const float&)> cb)    { onTick = std::move(cb); 		}
+	void setOnHover(std::function<void(UIElement&, const float&)> cb)   { onHover = std::move(cb); 		}
+	void setOnMouseEnter(std::function<void(UIElement&)> cb)			{ onMouseEnter = std::move(cb); }
+	void setOnMouseLeave(std::function<void(UIElement&)> cb)			{ onMouseLeave = std::move(cb); }
+
+	// hierarchy pointers
     std::weak_ptr<UIElement> parent;
 
-    sf::Vector2f e_padding = {10, 10};
+	// override virtual functions
+    virtual void UpdateWidget(const float dt) = 0;
+    virtual void Render(sf::RenderTarget& target) = 0;
+    virtual void DrawSelf(sf::RenderTarget& target) = 0;
 
-    float borderThickness = 2.f;
-    sf::Color borderColor = sf::Color::Black;
+	virtual void HandleWidgetEvent(const UIEvent& event) = 0;
 
-	bool layoutDirty = true;
+    virtual void HandleEvent(const UIEvent& event){
+		if(!enabled) return;
 
-    UIElement(const std::string& id);
-
-	sf::Vector2f getSize(){return e_size;}
-
-    virtual UIElement* AddChild(std::shared_ptr<UIElement> child) { return nullptr; }
-    virtual void CalculateLayout() = 0;
-    virtual void Update(const float dt) = 0;
-
-    virtual void Render(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) = 0;	// for drawing children
-    virtual void DrawSelf(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) = 0;	// for drawing itself
-    virtual void HandleEvent(const UIEvent& event) {};	// default empty event handler but may be overridden by derived classes
-    virtual ~UIElement() {}
-
-	void markLayoutDirty() {
-		layoutDirty = true;
-
-		if (auto parentPtr = parent.lock()) {
-			parentPtr->markLayoutDirty();
+		if(event.type == UIEventType::MouseMove){
+			if(auto* data = std::get_if<MouseEventData>(&event.data)){
+				if(!hovered && getBounds().contains(data->pos)){
+					hovered = true;
+					if(onMouseEnter) onMouseEnter(*this);
+				}else if(hovered && !getBounds().contains(data->pos)){
+					hovered = false;
+					if(onMouseLeave) onMouseLeave(*this);
+				}
+			}
 		}
+		HandleWidgetEvent(event);
 	}
 
-protected:
-    static std::string defaultName() {
-        return std::to_string(UIElement::ElementCount);
+	virtual void Update(const float& dt){
+		if(!enabled) return;
+
+		if(onTick) onTick(*this, dt);
+
+		if(hovered){
+			hoverDuration += dt;
+			if(onHover) onHover(*this, hoverDuration);
+		}else{
+			hoverDuration = 0;
+		}
+
+		UpdateWidget(dt);
 	}
 
-	Interpolated<sf::Vector2f> interpolated_position;
+	//any override to this function must update the interpolated variables and update the parent's accumulated offset
+	virtual void PositionPass(){
+		switch(layoutType){
+			case LayoutType::Relative:
+				if (auto parentPtr = parent.lock()) { 
+					parentPtr->updateAccumulatedOffset();
+					e_position = parentPtr->accumulatedOffset + e_offset;
+				}
+				else { e_position = e_offset; }
+				break;
+
+			case LayoutType::Percent:
+				if (auto parentPtr = parent.lock()) {
+				sf::Vector2f parentSize = parentPtr->e_size - parentPtr->e_padding * 2.0f;
+				e_position.x = parentPtr->e_position.x + parentPtr->e_padding.x + (e_size.x * (e_offset.x / 100.f));
+				e_position.y = parentPtr->e_position.y + parentPtr->e_padding.y + (e_size.y * (e_offset.y / 100.f));
+				}
+				break;
+
+			case LayoutType::Static:
+				e_position = e_offset;
+				break;
+		}
+		intr_position = e_position;
+	}
+	virtual void SizePass(){
+		switch(sizeType){
+			case SizeType::Percent:
+				if (auto parentPtr = parent.lock()) {
+				auto parentArea = parentPtr->e_size - parentPtr->e_padding/0.5f;
+				e_size.x = parentArea.x * (e_size.x / 100.f);
+				e_size.y = parentArea.y * (e_size.y / 100.f);
+				}
+				break;
+			
+			case SizeType::FillParent:
+				if (auto parentPtr = parent.lock()) { e_size = parentPtr->e_size - parentPtr->e_padding*2.f - e_offset; }
+				break;
+
+			case SizeType::FitContent:	//fit content is either widget specific or not supported
+			case SizeType::Absolute:
+				break;
+		}
+		intr_size = e_size;
+	}
+
+	//any override to this function must update the accumulated offset and include some layoutDirty management
+	virtual void CalculateLayout(){
+		PositionPass();
+		SizePass();
+	}
+
+	UIElement(){ ElementCount++; }
 };
 
 // Leaf type: cannot have children, only draws itself
 class UILeaf : public UIElement {
 public:
-    UILeaf(const std::string& id) : UIElement(id) {}
-    // Leaves cannot have children
-    UIElement* AddChild(std::shared_ptr<UIElement> child) override { return nullptr; }
+    void Render(sf::RenderTarget& target) override {
+		if(!visible) return;
 
-    void Render(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) override {
-        DrawSelf(target, states);
+        DrawSelf(target);
     }
-	
-    void HandleEvent(const UIEvent& event) override {};
 };
 
 // Container type: can have children and manages layout
@@ -87,19 +173,96 @@ class UIContainer : public UIElement {
 public:
     std::vector<std::shared_ptr<UIElement>> children;
 
-    UIContainer(const std::string& id);
-    UIElement* AddChild(std::shared_ptr<UIElement> child) override;
-    void Render(sf::RenderTarget& target, sf::RenderStates states = sf::RenderStates::Default) override;
-    void HandleEvent(const UIEvent& event) override;
+    UIElement* AddChild(std::shared_ptr<UIElement> child) {
+		children.push_back(child);
+		child->parent = shared_from_this();
+		return child.get();
+	}
 
-	void markChildrenDirty(){
-		layoutDirty = true;
-		for (auto& child : children) {
-			if (auto leaf = dynamic_cast<UILeaf*>(child.get())) {
-				leaf->layoutDirty = true;
-			} else if (auto container = dynamic_cast<UIContainer*>(child.get())) {
-				container->markChildrenDirty();
+    void Render(sf::RenderTarget& target) override {
+		if(visible) DrawSelf(target);
+
+		if(childrenVisible){
+			for (const auto& child : children) {
+				child->Render(target);
 			}
 		}
 	}
+
+	void updateAccumulatedOffset() override {
+		accumulatedOffset.x = e_position.x + e_padding.x;
+		accumulatedOffset.y = e_position.y + e_padding.y + headerHeight*1.2;
+	}
+
+	//any override to this function must handle children update
+	void UpdateWidget(const float dt) override {
+		for (auto& child : children) {
+			child->Update(dt);
+		}
+	}
+
+	void CalculateLayout() override {
+		PositionPass();
+		if(sizeType == SizeType::FitContent){
+			for (auto& child : children) {
+				child->CalculateLayout();
+			}
+			SizePass();
+		}else{
+			SizePass();
+			for (auto& child : children) {
+				child->CalculateLayout();
+			}
+		}
+	}
+
+	void SizePass() override {
+		switch(sizeType){
+			case SizeType::Percent:
+				if (auto parentPtr = parent.lock()) {
+				auto parentArea = parentPtr->e_size - parentPtr->e_padding/0.5f;
+				e_size.x = parentArea.x * (e_size.x / 100.f);
+				e_size.y = parentArea.y * (e_size.y / 100.f);
+				}
+				break;
+			
+			case SizeType::FillParent:
+				if (auto parentPtr = parent.lock()) { e_size = parentPtr->e_size - parentPtr->e_padding*2.f - e_offset; }
+				break;
+
+			case SizeType::FitContent: {
+				UpdateHeaderSize();
+				sf::Vector2f maxSize = headerSize + e_padding + sf::Vector2f(headerHeight,0);
+				if(childrenVisible){
+					for (const auto& child : children) {
+						if(!child->enabled) continue;
+						child->SizePass();
+						sf::Vector2f childBR = child->e_position + child->e_size - e_position;
+						maxSize.x = std::max(maxSize.x, childBR.x);
+						maxSize.y = std::max(maxSize.y, childBR.y);
+					}
+				}
+				e_size = maxSize + e_padding * 2.f;
+				break;
+			}
+
+			case SizeType::Absolute:
+				break;
+		}
+		intr_size = e_size;
+	}
+
+	//this function should update the "headerSize" using the header's text from the child class
+	//it serves to correctly calculate the fitcontent type when the menu is empty
+	virtual void UpdateHeaderSize() = 0;
+
+public:
+	std::string headerTitle = "";
+	float headerHeight = 30.f;		Interpolated<float> intr_headerHeight;
+	sf::Color headerColor;
+	sf::Color headerBorderColor;
+	sf::Vector2f headerSize;
+
+	sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");
+	bool childrenVisible = true;	//for menu functionality
 };

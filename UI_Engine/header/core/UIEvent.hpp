@@ -1,26 +1,37 @@
 #pragma once
+#include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
+#include <variant>
+#include <optional>
 
 enum class UIEventType {
     MouseMove,
     MouseDown,
     MouseUp,
-    Click,
-    Hover,
-    Leave,
     KeyDown,
     KeyUp,
-	TextEntered
+    TextEntered,
 };
+
+struct MouseEventData {
+    sf::Vector2f pos;
+    int button; // 0=left, 1=right
+};
+
+struct KeyEventData {
+    int key;     // sf::Keyboard::Key
+    bool ctrl;
+    bool shift;
+    bool alt;
+};
+
+struct TextEventData {
+    char unicodeChar;
+};
+
+using UIEventPayload = std::variant<std::monostate ,MouseEventData, KeyEventData, TextEventData>;
 
 struct UIEvent {
     UIEventType type;
-    sf::Vector2f mousePos;
-    int mouseButton = 0; // 0=left, 1=right.
-    int key = 0;         // Key code for keyboard events
-    char textChar = 0;   // Character for text input events
-
-	bool ctrl  = false;
-    bool shift = false;
-    bool alt   = false;
+    UIEventPayload data;
 };

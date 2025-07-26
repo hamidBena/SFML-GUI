@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-
 enum class InterpolationType {
 	linear,
 	easeInOutElastic,
@@ -34,7 +33,7 @@ struct Interpolated{
 	T end{};
 
 	float startTime{};
-	float speed{6.0f};
+	float speed{20.0f};
 
 	InterpolationType InterpolationType{InterpolationType::linear};
 
