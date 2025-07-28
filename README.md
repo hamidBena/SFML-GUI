@@ -45,3 +45,4 @@ make
 ```
 
 Example usage in folder "test samples"
+NOTE: the test samples are all removed, they will soon be replaced with the new valid examples. (the only valid example atm is test5.cpp)
