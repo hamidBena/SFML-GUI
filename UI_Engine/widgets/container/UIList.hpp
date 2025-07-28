@@ -16,12 +16,11 @@ class UIList : public UIContainer {
 public:
     UIList() {
 		setFillColor(sf::Color(60, 60, 63, 230));
-		setBorderColor(sf::Color(58, 58, 60, 180));
+		setBorderColor(sf::Color(38, 38, 30, 220));
 		setHeaderColor(sf::Color(90, 190, 90, 255));
 		setHeaderHeight(30);
 
 		e_padding = {10,10};
-
 		spacing = 10.f;
 		headerTitle = "List Menu";
 	}
@@ -87,6 +86,15 @@ public:
 		horizontal = hr;
 		return *this;
 	}
+	UIList& setWidth(unsigned int wd){
+		rowWidth = wd;
+		return *this;
+	}
+
+	// Widget specific getters
+	float getSpacing(){return spacing;}
+	bool getHorizontal(){return horizontal;}
+	unsigned int getWidth(){return rowWidth;}
 
 	//list layout logic
 	void CalculateLayout() override {
@@ -107,14 +115,56 @@ public:
 	}
 
 	void EmplaceChildren(){
-		float currentY = e_position.y + headerHeight*1.5;
-		for(auto& child : children){
-			child->e_position.y = currentY;
-			child->intr_position = child->e_position;
-			currentY += child->e_size.y + spacing;
+		if(horizontal){
+			float currentX = e_position.x + e_padding.x;
+			int counter = 0;
+
+			sf::Vector2f cellSize = GetMaxCellSize(); // max per-child size in current row
+			cellSize.y += spacing;
+
+			for (auto& child : children) {
+				child->e_position.y += cellSize.y * counter;
+				child->e_position.x = currentX;
+				child->intr_position = child->e_position;
+
+				if (counter >= rowWidth - 1) { // ⬅️ wrap into new column
+					currentX += cellSize.x + spacing;
+					counter = 0;
+				} else {
+					counter++;
+				}
+			}
+		}else{
+			float currentY = e_position.y + headerHeight + e_padding.y;
+			int counter = 0;
+			
+			sf::Vector2f cellSize = GetMaxCellSize();
+			cellSize.x += spacing;
+			
+			for(auto& child : children){
+				child->e_position.x += cellSize.x * counter;
+
+				child->e_position.y = currentY;
+				child->intr_position = child->e_position;
+
+				if(counter >= rowWidth-1){
+					currentY += cellSize.y + spacing;
+					counter = 0;
+				}else{
+					counter ++;
+				}
+			}
 		}
 	}
 
+	sf::Vector2f GetMaxCellSize(){
+		sf::Vector2f maxSize = {0,0};
+		for(auto& child:children){
+			maxSize.x = std::max(maxSize.x, child->e_size.x);
+			maxSize.y = std::max(maxSize.y, child->e_size.y);
+		}
+		return maxSize;
+	}
 
 
 public:
@@ -157,6 +207,7 @@ private:
     bool horizontal = false;
 	bool toggle_hovered = false;
 	float spacing = 5.f;
+	unsigned int rowWidth = 1;
 
 	UIListComponents shapes = buildShapes();
 private:

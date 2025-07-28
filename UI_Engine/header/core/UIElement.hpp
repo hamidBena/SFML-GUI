@@ -249,7 +249,10 @@ public:
 			case SizeType::Absolute:
 				break;
 		}
-		intr_size = e_size;
+
+		if(intr_size.end != e_size){
+			intr_size = e_size;
+		}
 	}
 
 	//this function should update the "headerSize" using the header's text from the child class

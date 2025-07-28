@@ -18,6 +18,7 @@ int main() {
     Menu1->setOffset({200, 100});
 
 	auto list1 = UI.CreateList();
+	list1->setWidth(2);
 
     auto InputField = UI.CreateTextField();
 
@@ -30,9 +31,8 @@ int main() {
 	});
 
 	auto Label = UI.CreateLabel();
-	Label->setRoundingDecimals(2)
-	.setLabel("hello this is a test for the label\ni need to test multi lines, dynamic sizing and interpolation integrity!\nthis is a decimal rounding text: 1.5464123 does it work? i hope");
-	
+	Label->setRoundingDecimals(2);
+
 	auto Slider = UI.CreateSlider();
 	Slider->setBoundValue(&loading_value)
 	.setRange(0,10);
@@ -52,18 +52,14 @@ int main() {
 
 	Menu1->AddChild(list1);
 
-
-
-	Button->setOnClick([&Menu1](UIButton& element, float duration){
-		Menu1->setOffset({duration*500, duration*250});
-	});
-	
-
     sf::Clock clock;
 	UI.Update(0);
 	float layoutTime = clock.getElapsedTime().asMicroseconds();
 	std::string output = "Layout Time: " + std::to_string(layoutTime) + " µs\n";
 
+	ChkBx->setOnToggle([&list1](auto& element, bool& check){
+		list1->setHorizontal(check);
+	});
 
     while (window.isOpen()) {
         sf::Event event;
@@ -85,7 +81,7 @@ int main() {
         float dt = clock.restart().asSeconds();
         UI.Update(dt);
 		layoutTime = clock.getElapsedTime().asMicroseconds();
-		output = "Layout Time: " + std::to_string(layoutTime) + " micro s\n";
+		output = "Time: " + std::to_string(layoutTime) + " micro s\n";
 
         window.clear({80, 80, 80});
         UI.draw(window);

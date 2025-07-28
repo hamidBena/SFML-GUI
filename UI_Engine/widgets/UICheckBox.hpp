@@ -64,8 +64,8 @@ public:
 		return *this;
 	}
 
-
-    UICheckBox& setOnToggle(std::function<void(bool)> cb) {
+	// Widget Specific callback setters
+    UICheckBox& setOnToggle(std::function<void(UICheckBox&, bool&)> cb) {
         onToggle = std::move(cb);
         return *this;
     }
@@ -84,7 +84,7 @@ public:
 			if(auto* data = std::get_if<MouseEventData>(&event.data)){
 				if(boxBounds.contains(data->pos)){
 					checked = !checked;
-					if(onToggle) onToggle(checked);
+					if(onToggle) onToggle(*this, checked);
 				} 
 			}
 		}
@@ -100,7 +100,7 @@ private:
     }
 
     bool checked;
-    std::function<void(bool)> onToggle;
+    std::function<void(UICheckBox&, bool&)> onToggle;
 
     std::string labelText = "Check";
     sf::Font font = AssetManager::get().getFont("fonts/arial.ttf");

@@ -80,6 +80,12 @@ struct Interpolated{
 	}
 
 	[[nodiscard]]
+	bool is_done() const {
+		float rawProgress = (GetCurrentTime() - startTime) * speed;
+		return rawProgress >= 1.0f;
+	}
+
+	[[nodiscard]]
 	operator T() const {
 		return getValue();
 	}

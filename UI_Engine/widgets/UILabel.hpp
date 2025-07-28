@@ -83,7 +83,7 @@ public:
 				break;
 
 			case SizeType::FitContent:	//fit content is either widget specific or not supported
-				e_size = shapes.textArea;
+				e_size = shapes.textArea + e_padding;
 			case SizeType::Absolute:
 				break;
 		}
