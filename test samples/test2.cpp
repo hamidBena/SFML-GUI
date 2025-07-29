@@ -15,7 +15,6 @@ int main() {
 
     GUI UI;
     auto Menu1 = UI.CreateRoot();
-    Menu1->setOffset({200, 100});
 
 	auto list1 = UI.CreateList();
 	list1->setWidth(2);
@@ -37,8 +36,6 @@ int main() {
 	auto Slider = UI.CreateSlider();
 	Slider->setBoundValue(&loading_value)
 	.setRange(0,10);
-	
-	//auto CheckBox = UI.CreateUICheckBox();
 	
 	auto PrgBar = UI.CreateUIProgressBar();
 	PrgBar->setBoundValue(&loading_value)
@@ -77,12 +74,11 @@ int main() {
             UI.HandleEvent(event, window);
         }
 
-		Label->setLabel(output);
-
         float dt = clock.restart().asSeconds();
         UI.Update(dt);
 		layoutTime = clock.getElapsedTime().asMicroseconds();
 		output = "Time: " + std::to_string(layoutTime) + " micro s\n";
+		Label->setLabel(output);
 
         window.clear({80, 80, 80});
         UI.draw(window);

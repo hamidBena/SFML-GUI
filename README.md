@@ -46,3 +46,6 @@ make
 ```
 
 Example usage in folder "test samples"
+
+## Important notes:
+- UIDragable & UIRoot do not support nesting (i.e they are only intented for GUI handling entry points nesting them will cause menu closing to fai.)

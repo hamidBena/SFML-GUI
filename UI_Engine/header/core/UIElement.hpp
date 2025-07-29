@@ -185,8 +185,16 @@ public:
 
 	//any override to this function must handle children update
 	void UpdateWidget(const float dt) override {
+		if(!childrenVisible) return;
 		for (auto& child : children) {
 			child->Update(dt);
+		}
+	}
+
+	void HandleWidgetEvent(const UIEvent& event) override {
+		if(!childrenVisible) return;
+		for (auto& child : children) {
+			child->HandleEvent(event);
 		}
 	}
 
@@ -254,7 +262,7 @@ public:
 
 	//this function should update the "headerSize" using the header's text from the child class
 	//it serves to correctly calculate the fitcontent type when the menu is empty
-	virtual void UpdateHeaderSize() = 0;
+	virtual void UpdateHeaderSize(){}
 
 public:
 	std::string headerTitle = "";

@@ -8,6 +8,7 @@
 #include "utils/Interpolation.hpp"
 
 #include "../widgets/container/UIRoot.hpp"
+#include "../widgets/container/UIDragable.hpp"
 #include "../widgets/container/UIList.hpp"
 
 #include "../widgets/UIButton.hpp"
@@ -23,6 +24,7 @@ public:
 	// container creation
     std::shared_ptr<UIRoot> CreateRoot();
     std::shared_ptr<UIList> CreateList();
+    std::shared_ptr<UIDraggable> CreateDraggableMenu();
 	//widget creation
     std::shared_ptr<UIButton> CreateButton();
     std::shared_ptr<UILabel> CreateLabel();
@@ -39,19 +41,21 @@ public:
 
 		target.setView(uiView);
 
-		for(auto& root : UIRoots) root->Render(target);
+		for(auto& container : UIContainers){
+			container->CalculateLayout();
+			container->Render(target);
+		}
 		
 		target.setView(oldView);
 	}
     void PassEvent(const UIEvent& event){
-		for (auto& root : UIRoots) {
-			root->HandleEvent(event);
+		for (auto& container : UIContainers) {
+			container->HandleEvent(event);
 		}
 	}
 	void Update(const float dt) {
-		for (auto& root : UIRoots) {
-			root->CalculateLayout();
-			root->Update(dt);
+		for (auto& container : UIContainers) {
+			container->Update(dt);
 		}
 	}
 
@@ -95,5 +99,5 @@ private:
 		}
 	}
 
-    std::vector<std::shared_ptr<UIRoot>> UIRoots;
+    std::vector<std::shared_ptr<UIContainer>> UIContainers;
 };

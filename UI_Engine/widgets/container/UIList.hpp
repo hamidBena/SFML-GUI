@@ -109,40 +109,58 @@ public:
 	}
 
 	void EmplaceChildren(){
-		sf::Vector2f cellSize = GetMaxCellSize();
-		if(horizontal){
-			float currentX = e_position.x + e_padding.x;
-			int counter = 0;
-			cellSize.y += spacing;
+		if(rowWidth > 1){
+			sf::Vector2f cellSize = GetMaxCellSize();
+			if(horizontal){
+				float currentX = e_position.x + e_padding.x;
+				int counter = 0;
+				cellSize.y += spacing;
 
-			for (auto& child : children) {
-				child->Move({0, cellSize.y * counter});
-				child->e_position.x = currentX;
-				child->intr_position = child->e_position;
+				for (auto& child : children) {
+					child->Move({0, cellSize.y * counter});
+					child->e_position.x = currentX;
+					child->intr_position = child->e_position;
 
-				if (counter >= rowWidth - 1) {
-					currentX += cellSize.x + spacing;
-					counter = 0;
-				} else {
-					counter++;
+					if (counter >= rowWidth - 1) {
+						currentX += cellSize.x + spacing;
+						counter = 0;
+					} else {
+						counter++;
+					}
+				}
+			}else{
+				float currentY = e_position.y + headerHeight + e_padding.y;
+				int counter = 0;
+				cellSize.x += spacing;
+				
+				for(auto& child : children){
+					child->Move({cellSize.x * counter,0});
+
+					child->e_position.y = currentY;
+					child->intr_position = child->e_position;
+
+					if(counter >= rowWidth-1){
+						currentY += cellSize.y + spacing;
+						counter = 0;
+					}else{
+						counter ++;
+					}
 				}
 			}
 		}else{
-			float currentY = e_position.y + headerHeight + e_padding.y;
-			int counter = 0;
-			cellSize.x += spacing;
-			
-			for(auto& child : children){
-				child->Move({cellSize.x * counter,0});
-
-				child->e_position.y = currentY;
-				child->intr_position = child->e_position;
-
-				if(counter >= rowWidth-1){
-					currentY += cellSize.y + spacing;
-					counter = 0;
-				}else{
-					counter ++;
+			if(horizontal){
+				float currentX = e_position.x + headerHeight*1.5;
+				for(auto& child : children){
+					child->e_position.x = currentX;
+					child->intr_position = child->e_position;
+					currentX += child->e_size.x + spacing;
+				}
+			}else{
+				float currentY = e_position.y + headerHeight*1.5;
+				for(auto& child : children){
+					child->e_position.y = currentY;
+					child->intr_position = child->e_position;
+					currentY += child->e_size.y + spacing;
 				}
 			}
 		}
