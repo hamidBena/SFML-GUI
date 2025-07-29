@@ -9,7 +9,6 @@
 
 #include "../widgets/container/UIRoot.hpp"
 #include "../widgets/container/UIList.hpp"
-#include "../widgets/container/UIGrid.hpp"
 
 #include "../widgets/UIButton.hpp"
 #include "../widgets/UILabel.hpp"
@@ -24,7 +23,6 @@ public:
 	// container creation
     std::shared_ptr<UIRoot> CreateRoot();
     std::shared_ptr<UIList> CreateList();
-    std::shared_ptr<UIGrid> CreateGrid();
 	//widget creation
     std::shared_ptr<UIButton> CreateButton();
     std::shared_ptr<UILabel> CreateLabel();

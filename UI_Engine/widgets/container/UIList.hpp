@@ -100,34 +100,27 @@ public:
 	void CalculateLayout() override {
 		updateAccumulatedOffset();
 		PositionPass();
-		if(sizeType == SizeType::FitContent){
-			for (auto& child : children) {
-				child->CalculateLayout();
-			}
-			EmplaceChildren();
-			SizePass();
-		}else{
-			SizePass();
-			for (auto& child : children) {
-				child->CalculateLayout();
-			}
+
+		for (auto& child : children) {
+			child->CalculateLayout();
 		}
+		EmplaceChildren();
+		SizePass();
 	}
 
 	void EmplaceChildren(){
+		sf::Vector2f cellSize = GetMaxCellSize();
 		if(horizontal){
 			float currentX = e_position.x + e_padding.x;
 			int counter = 0;
-
-			sf::Vector2f cellSize = GetMaxCellSize(); // max per-child size in current row
 			cellSize.y += spacing;
 
 			for (auto& child : children) {
-				child->e_position.y += cellSize.y * counter;
+				child->Move({0, cellSize.y * counter});
 				child->e_position.x = currentX;
 				child->intr_position = child->e_position;
 
-				if (counter >= rowWidth - 1) { // ⬅️ wrap into new column
+				if (counter >= rowWidth - 1) {
 					currentX += cellSize.x + spacing;
 					counter = 0;
 				} else {
@@ -137,12 +130,10 @@ public:
 		}else{
 			float currentY = e_position.y + headerHeight + e_padding.y;
 			int counter = 0;
-			
-			sf::Vector2f cellSize = GetMaxCellSize();
 			cellSize.x += spacing;
 			
 			for(auto& child : children){
-				child->e_position.x += cellSize.x * counter;
+				child->Move({cellSize.x * counter,0});
 
 				child->e_position.y = currentY;
 				child->intr_position = child->e_position;

@@ -14,12 +14,6 @@ std::shared_ptr<UIList> GUI::CreateList() {
     return list;
 }
 
-std::shared_ptr<UIGrid> GUI::CreateGrid() {
-    std::shared_ptr<UIGrid> Grid;
-    Grid = std::make_shared<UIGrid>();
-    return Grid;
-}
-
 
 std::shared_ptr<UIButton> GUI::CreateButton() {
 	auto button = std::make_shared<UIButton>();

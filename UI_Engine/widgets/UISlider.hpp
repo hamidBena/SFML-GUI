@@ -158,66 +158,79 @@ private:
 	UISliderComponents shapes = buildShapes(); 
 
 private:
-    UISliderComponents buildShapes() const {
-        UISliderComponents shapes;
+	UISliderComponents buildShapes() const {
+		UISliderComponents shapes;
 
-        const auto pos = intr_position.getValue();
-        const auto size = intr_size.getValue();
-        const float t = (intr_value - minValue) / (maxValue - minValue);
-        const float outerHeight = size.y / 1.5f;
+		// Fetch layout & normalized t
+		const auto  pos     = intr_position.getValue();
+		const auto  size    = intr_size.getValue();
+		const float range   = maxValue - minValue;
+		const float t       = (range != 0.f)
+							? (intr_value - minValue) / range
+							: 0.f;
 
-        // --- Outer track ---
-        sf::RectangleShape outer(sf::Vector2f(size.x, outerHeight));
-        outer.setPosition(pos.x, pos.y + (size.y - outerHeight) / 2.f);
-        outer.setFillColor(sf::Color(50, 50, 50, 180));
-        outer.setOutlineColor(e_borderColor);
-        outer.setOutlineThickness(e_borderThickness);
-        shapes.outerTrack = outer;
+		// Track dimensions
+		const float outerH    = size.y / 1.5f;
+		const float centerY   = pos.y + (size.y - outerH) * 0.5f;
 
-        // --- Inner track ---
-        float innerWidth = size.x * t;
-        sf::RectangleShape inner(sf::Vector2f(innerWidth, outerHeight));
-        inner.setPosition(pos.x, pos.y + (size.y - outerHeight) / 2.f);
-        inner.setFillColor(e_fillcolor);
-        shapes.innerTrack = inner;
+		// ——— Outer track ———
+		shapes.outerTrack.setSize({ size.x, outerH });
+		shapes.outerTrack.setPosition(pos.x, centerY);
+		shapes.outerTrack.setFillColor({ 50,  50,  50, 180 });
+		shapes.outerTrack.setOutlineColor(e_borderColor);
+		shapes.outerTrack.setOutlineThickness(e_borderThickness);
 
-        // --- Handle ---
-        sf::Vector2f handleSize(size.x * 0.05f, size.y * 1.f);
-        float handleX = pos.x + t * size.x - handleSize.x / 2.f;
-        float handleY = pos.y + (size.y - handleSize.y) / 2.f;
+		// ——— Inner track ———
+		shapes.innerTrack.setSize({ size.x * t, outerH });
+		shapes.innerTrack.setPosition(pos.x, centerY);
+		shapes.innerTrack.setFillColor(e_fillcolor);
 
-        sf::RectangleShape handle(handleSize);
-        handle.setPosition(handleX, handleY);
+		// ——— Handle ———
+		const sf::Vector2f handleSize{ size.x * 0.05f, size.y };
+		const float handleX = pos.x + size.x * t - handleSize.x * 0.5f;
+		const float handleY = pos.y + (size.y - handleSize.y) * 0.5f;
 
-        sf::Color handleColor = (hovered || dragging) ? sf::Color(100, 180, 255) : sf::Color(200, 200, 200);
-        if (dragging) {
-            handleColor.r = std::min(255, handleColor.r + 30);
-            handleColor.g = std::min(255, handleColor.g + 30);
-            handleColor.b = std::min(255, handleColor.b + 30);
-        }
-        handle.setFillColor(handleColor);
-        handle.setOutlineColor(e_borderColor);
-        handle.setOutlineThickness(e_borderThickness);
-        shapes.handle = handle;
+		shapes.handle.setSize(handleSize);
+		shapes.handle.setPosition(handleX, handleY);
 
-        // --- Value Text ---
-        if (showValue) {
-            sf::Text txt;
-            txt.setFont(font);
-            txt.setCharacterSize(textSize);
-            txt.setFillColor(textColor);
+		sf::Color handleColor = (hovered || dragging)
+			? sf::Color{100, 180, 255}
+			: sf::Color{200, 200, 200};
+		if (dragging) {
+			handleColor.r = std::min<int>(255, handleColor.r + 30);
+			handleColor.g = std::min<int>(255, handleColor.g + 30);
+			handleColor.b = std::min<int>(255, handleColor.b + 30);
+		}
+		shapes.handle.setFillColor(handleColor);
+		shapes.handle.setOutlineColor(e_borderColor);
+		shapes.handle.setOutlineThickness(e_borderThickness);
 
-            std::stringstream ss;
-            ss << std::fixed << std::setprecision(2) << value;
-            txt.setString(ss.str());
+		// ——— Optional Value Text ———
+		if (showValue) {
+			// Create the text in-place
+			shapes.valueText.emplace();
 
-            sf::FloatRect tb = txt.getLocalBounds();
-            txt.setOrigin(tb.left + tb.width / 2.f, tb.top + tb.height / 2.f);
-            txt.setPosition(pos.x + size.x / 2.f, pos.y + size.y / 2.f);
+			auto& txt = *shapes.valueText;
+			txt.setFont(font);
+			txt.setCharacterSize(textSize);
+			txt.setFillColor(textColor);
 
-            shapes.valueText = txt;
-        }
+			std::ostringstream ss;
+			ss << std::fixed << std::setprecision(2) << intr_value;
+			txt.setString(ss.str());
 
-        return shapes;
-    }
+			auto bounds = txt.getLocalBounds();
+			txt.setOrigin(
+				bounds.left + bounds.width  * 0.5f,
+				bounds.top  + bounds.height * 0.5f
+			);
+			txt.setPosition(
+				pos.x + size.x * 0.5f,
+				pos.y + size.y * 0.5f
+			);
+		}
+
+		return shapes;
+	}
+
 };

@@ -70,18 +70,6 @@ public:
 	//size pass override cause the label supports "fit content type"
 	void SizePass() override {
 		switch(sizeType){
-			case SizeType::Percent:
-				if (auto parentPtr = parent.lock()) {
-				auto parentArea = parentPtr->e_size - parentPtr->e_padding/0.5f;
-				e_size.x = parentArea.x * (e_size.x / 100.f);
-				e_size.y = parentArea.y * (e_size.y / 100.f);
-				}
-				break;
-			
-			case SizeType::FillParent:
-				if (auto parentPtr = parent.lock()) { e_size = parentPtr->e_size - parentPtr->e_padding*2.f - e_offset; }
-				break;
-
 			case SizeType::FitContent:	//fit content is either widget specific or not supported
 				e_size = shapes.textArea + e_padding;
 			case SizeType::Absolute:

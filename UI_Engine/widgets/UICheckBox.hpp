@@ -64,6 +64,12 @@ public:
 		return *this;
 	}
 
+	// Widget Specfic setters
+	UICheckBox& setLabel(std::string lbl){
+		labelText = lbl;
+		return *this;
+	}
+
 	// Widget Specific callback setters
     UICheckBox& setOnToggle(std::function<void(UICheckBox&, bool&)> cb) {
         onToggle = std::move(cb);

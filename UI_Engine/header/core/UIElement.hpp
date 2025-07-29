@@ -10,8 +10,8 @@
 #include "core/UIEvent.hpp"
 
 // Layout enums
-enum class LayoutType { Static, Relative, Percent };
-enum class SizeType { Absolute, FitContent, FillParent, Percent };
+enum class LayoutType { Static, Relative };
+enum class SizeType { Absolute, FitContent };
 
 class UIElement : public std::enable_shared_from_this<UIElement> {
 public:
@@ -114,13 +114,13 @@ public:
 				else { e_position = e_offset; }
 				break;
 
-			case LayoutType::Percent:
-				if (auto parentPtr = parent.lock()) {
-				sf::Vector2f parentSize = parentPtr->e_size - parentPtr->e_padding * 2.0f;
-				e_position.x = parentPtr->e_position.x + parentPtr->e_padding.x + (e_size.x * (e_offset.x / 100.f));
-				e_position.y = parentPtr->e_position.y + parentPtr->e_padding.y + (e_size.y * (e_offset.y / 100.f));
-				}
-				break;
+			//case LayoutType::Percent:
+			//	if (auto parentPtr = parent.lock()) {
+			//	sf::Vector2f parentSize = parentPtr->e_size - parentPtr->e_padding * 2.0f;
+			//	e_position.x = parentPtr->e_position.x + parentPtr->e_padding.x + (e_size.x * (e_offset.x / 100.f));
+			//	e_position.y = parentPtr->e_position.y + parentPtr->e_padding.y + (e_size.y * (e_offset.y / 100.f));
+			//	}
+			//	break;
 
 			case LayoutType::Static:
 				e_position = e_offset;
@@ -129,23 +129,6 @@ public:
 		intr_position = e_position;
 	}
 	virtual void SizePass(){
-		switch(sizeType){
-			case SizeType::Percent:
-				if (auto parentPtr = parent.lock()) {
-				auto parentArea = parentPtr->e_size - parentPtr->e_padding/0.5f;
-				e_size.x = parentArea.x * (e_size.x / 100.f);
-				e_size.y = parentArea.y * (e_size.y / 100.f);
-				}
-				break;
-			
-			case SizeType::FillParent:
-				if (auto parentPtr = parent.lock()) { e_size = parentPtr->e_size - parentPtr->e_padding*2.f - e_offset; }
-				break;
-
-			case SizeType::FitContent:	//fit content is either widget specific or not supported
-			case SizeType::Absolute:
-				break;
-		}
 		intr_size = e_size;
 	}
 
@@ -153,6 +136,12 @@ public:
 	virtual void CalculateLayout(){
 		PositionPass();
 		SizePass();
+	}
+
+	//use this if you want to move the widget recursively to also move the children if the object was a container
+	virtual void Move(const sf::Vector2f& offset) {
+		e_position += offset;
+		intr_position = e_position;
 	}
 
 	UIElement(){ ElementCount++; }
@@ -218,17 +207,17 @@ public:
 
 	void SizePass() override {
 		switch(sizeType){
-			case SizeType::Percent:
-				if (auto parentPtr = parent.lock()) {
-				auto parentArea = parentPtr->e_size - parentPtr->e_padding/0.5f;
-				e_size.x = parentArea.x * (e_size.x / 100.f);
-				e_size.y = parentArea.y * (e_size.y / 100.f);
-				}
-				break;
-			
-			case SizeType::FillParent:
-				if (auto parentPtr = parent.lock()) { e_size = parentPtr->e_size - parentPtr->e_padding*2.f - e_offset; }
-				break;
+			//case SizeType::Percent:
+			//	if (auto parentPtr = parent.lock()) {
+			//	auto parentArea = parentPtr->e_size - parentPtr->e_padding/0.5f;
+			//	e_size.x = parentArea.x * (e_size.x / 100.f);
+			//	e_size.y = parentArea.y * (e_size.y / 100.f);
+			//	}
+			//	break;
+			//
+			//case SizeType::FillParent:
+			//	if (auto parentPtr = parent.lock()) { e_size = parentPtr->e_size - parentPtr->e_padding*2.f - e_offset; }
+			//	break;
 
 			case SizeType::FitContent: {
 				UpdateHeaderSize();
@@ -252,6 +241,14 @@ public:
 
 		if(intr_size.end != e_size){
 			intr_size = e_size;
+		}
+	}
+
+	void Move(const sf::Vector2f& offset) override final{
+		e_position += offset;
+		intr_position = e_position;
+		for(auto& child : children){
+			child->Move(offset);
 		}
 	}
 

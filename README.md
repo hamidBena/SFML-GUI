@@ -3,6 +3,7 @@
 This is a lightweight and extensible GUI (Graphical User Interface) library built with C++ and [SFML (Simple and Fast Multimedia Library)](https://www.sfml-dev.org/). Designed to provide reusable UI components such as buttons, sliders, panels, and more, with a intuitive styling and layout management!
 
 ![example 1](assets/pictures/GUI1.JPG)
+![example 2](assets/pictures/GUI2.JPG)
 
 ## Features
 
@@ -45,4 +46,3 @@ make
 ```
 
 Example usage in folder "test samples"
-NOTE: the test samples are all removed, they will soon be replaced with the new valid examples. (the only valid example atm is test5.cpp)

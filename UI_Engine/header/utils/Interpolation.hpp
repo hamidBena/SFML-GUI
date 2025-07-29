@@ -33,7 +33,7 @@ struct Interpolated{
 	T end{};
 
 	float startTime{};
-	float speed{20.0f};
+	float speed{13.0f};
 
 	InterpolationType InterpolationType{InterpolationType::linear};
 

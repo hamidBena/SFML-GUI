@@ -113,50 +113,62 @@ private:
 	UIProgressBarComponents shapes = buildShapes();
 
 private:
-    UIProgressBarComponents buildShapes() const {
-        UIProgressBarComponents shapes;
+	UIProgressBarComponents buildShapes() const {
+		UIProgressBarComponents shapes;
 
-        auto pos  = intr_position.getValue();
-        auto size = intr_size.getValue();
+		// Layout & normalized t
+		const auto  pos   = intr_position.getValue();
+		const auto  size  = intr_size.getValue();
+		const float range = maxValue - minValue;
+		const float rawT  = (range != 0.f)
+							? (intr_value - minValue) / range
+							: 0.f;
+		const float t     = std::clamp(rawT, 0.f, 1.f);
 
-        float outerHeight = size.y / 1.5f;
-        float trackY = pos.y + (size.y - outerHeight) / 2.f;
+		// Track dimensions
+		const float outerH = size.y / 1.5f;
+		const float trackY = pos.y + (size.y - outerH) * 0.5f;
 
-        // --- Outer Track ---
-        shapes.outerTrack.setSize({size.x, outerHeight});
-        shapes.outerTrack.setPosition(pos.x, trackY);
-        shapes.outerTrack.setFillColor(sf::Color(50, 50, 50, 180));
-        shapes.outerTrack.setOutlineColor(e_borderColor);
-        shapes.outerTrack.setOutlineThickness(e_borderThickness);
+		// ——— Outer Track ———
+		shapes.outerTrack.setSize({ size.x, outerH });
+		shapes.outerTrack.setPosition(pos.x, trackY);
+		shapes.outerTrack.setFillColor({ 50, 50, 50, 180 });
+		shapes.outerTrack.setOutlineColor(e_borderColor);
+		shapes.outerTrack.setOutlineThickness(e_borderThickness);
 
-        // --- Inner Filled Bar ---
-        float t = std::clamp((intr_value - minValue) / (maxValue - minValue), 0.f, 1.f);
-        float innerWidth = size.x * t;
-        shapes.innerTrack.setSize({innerWidth, outerHeight});
-        shapes.innerTrack.setPosition(pos.x, trackY);
-        shapes.innerTrack.setFillColor(e_fillcolor);
+		// ——— Inner Filled Bar ———
+		shapes.innerTrack.setSize({ size.x * t, outerH });
+		shapes.innerTrack.setPosition(pos.x, trackY);
+		shapes.innerTrack.setFillColor(e_fillcolor);
 
-        // --- Value Text ---
-        if (showValue) {
-            sf::Text txt;
-            float percentage = std::clamp((value - minValue) / (maxValue - minValue), 0.f, 1.f) * 100.f;
+		// ——— Optional Value Text ———
+		if (showValue) {
+			shapes.valueText.emplace();
 
-            std::stringstream ss;
-            ss << std::fixed << std::setprecision(2) << percentage;
-            txt.setString(ss.str());
+			auto& txt = *shapes.valueText;
+			const float pct = t * 100.f;
 
-            txt.setFont(font);
-            txt.setCharacterSize(textSize);
-            txt.setFillColor(textColor);
+			std::ostringstream ss;
+			ss << std::fixed << std::setprecision(2) << pct;
+			txt.setString(ss.str());
 
-            sf::FloatRect bounds = txt.getLocalBounds();
-            txt.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
-            txt.setPosition(pos.x + size.x / 2.f, pos.y + size.y / 2.f);
+			txt.setFont(font);
+			txt.setCharacterSize(textSize);
+			txt.setFillColor(textColor);
 
-            shapes.valueText = txt;
-        }
+			auto bounds = txt.getLocalBounds();
+			txt.setOrigin(
+				bounds.left + bounds.width  * 0.5f,
+				bounds.top  + bounds.height * 0.5f
+			);
+			txt.setPosition(
+				pos.x + size.x * 0.5f,
+				pos.y + size.y * 0.5f
+			);
+		}
+		// else shapes.valueText stays disengaged
 
-        return shapes;
-    }
+		return shapes;
+	}
 
 };

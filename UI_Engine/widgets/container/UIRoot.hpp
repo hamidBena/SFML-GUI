@@ -8,8 +8,7 @@ struct UIRootComponents {
     sf::RectangleShape background;
     std::optional<sf::RectangleShape> headerBar;
     std::optional<sf::Text> headerText;
-    std::optional<sf::ConvexShape> debugTriangle;
-	sf::RectangleShape toggleButton;
+	std::optional<sf::RectangleShape> toggleButton;
 };
 
 class UIRoot : public UIContainer {
@@ -68,25 +67,24 @@ public:
 	// Container setters
 	UIRoot& setHeaderTitle(std::string title){headerTitle = title; return *this;}
 	UIRoot& setHeaderColor(const sf::Color& color){headerColor = color; return *this;}
-	UIRoot& setHeaderHeight(float height){headerHeight = height; intr_headerHeight = height; return *this;}
+	UIRoot& setHeaderHeight(float height){headerHeight = height; intr_headerHeight = headerHeight; return *this;}
 	UIRoot& setChildrenVisible(bool vis){childrenVisible = vis; return *this;}
 
 	// Container override functions
-	void UpdateHeaderSize() override {headerSize = shapes.headerText->getLocalBounds().getSize();}
+	void UpdateHeaderSize() override {if(shapes.headerBar) headerSize = shapes.headerText->getLocalBounds().getSize();}
 
     void DrawSelf(sf::RenderTarget& target) override {
 		shapes = buildShapes();
 		target.draw(shapes.background);
 		if (shapes.headerBar)   target.draw(*shapes.headerBar);
 		if (shapes.headerText)  target.draw(*shapes.headerText);
-		if (shapes.debugTriangle) target.draw(*shapes.debugTriangle);
-		target.draw(shapes.toggleButton);
+		if (shapes.toggleButton)target.draw(*shapes.toggleButton);
     }
 
     void HandleWidgetEvent(const UIEvent& event) override {
 		if (headerHeight > 0.f) {
             sf::FloatRect headerbounds = shapes.headerBar->getGlobalBounds();
-            sf::FloatRect togglebounds = shapes.toggleButton.getGlobalBounds();
+            sf::FloatRect togglebounds = shapes.toggleButton->getGlobalBounds();
             if (event.type == UIEventType::MouseDown) {
 				if (auto* data = std::get_if<MouseEventData>(&event.data)){
 					if(togglebounds.contains(data->pos)) {childrenVisible = !childrenVisible; return;}
@@ -115,11 +113,10 @@ public:
 					}
 				}
 			}
-
-			if(!childrenVisible) return;
-			for(auto& child:children){
-				child->HandleEvent(event);
-			}
+		}
+		if(!childrenVisible) return;
+		for(auto& child:children){
+			child->HandleEvent(event);
 		}
     }
 
@@ -166,6 +163,15 @@ private:
 				intr_position.getValue().y
 			);
 			shapes.headerText = headerText;
+
+			sf::RectangleShape toggleButton;
+			toggleButton.setSize(sf::Vector2f(25, 8));
+			toggleButton.setPosition(intr_position.getValue().x + 5, intr_position.getValue().y + intr_headerHeight.getValue()/2.f - toggleButtonSize.y/2.f);
+
+			if(toggle_hovered) toggleButton.setFillColor({100,100,100,200});
+			else toggleButton.setFillColor({50,50,50,200});
+
+			shapes.toggleButton = toggleButton;
 		}
 
 		// --- Background ---
@@ -174,15 +180,6 @@ private:
 		shapes.background.setFillColor(e_fillcolor);
 		shapes.background.setOutlineColor(e_borderColor);
 		shapes.background.setOutlineThickness(e_borderThickness);
-
-		sf::RectangleShape toggleButton;
-		toggleButton.setSize(sf::Vector2f(25, 8));
-		toggleButton.setPosition(intr_position.getValue().x + 5, intr_position.getValue().y + intr_headerHeight.getValue()/2.f - toggleButtonSize.y/2.f);
-
-		if(toggle_hovered) toggleButton.setFillColor({100,100,100,200});
-		else toggleButton.setFillColor({50,50,50,200});
-
-		shapes.toggleButton = toggleButton;
 
 		return shapes;
 	}	
