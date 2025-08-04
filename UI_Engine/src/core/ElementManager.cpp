@@ -4,7 +4,7 @@
 std::shared_ptr<UIRoot> GUI::CreateRoot() {
     std::shared_ptr<UIRoot> root;
     root = std::make_shared<UIRoot>();
-    UIContainers.push_back(root);
+    UIRoots.push_back(root);
     return root;
 }
 
@@ -12,13 +12,6 @@ std::shared_ptr<UIList> GUI::CreateList() {
     std::shared_ptr<UIList> list;
     list = std::make_shared<UIList>();
     return list;
-}
-
-std::shared_ptr<UIDraggable> GUI::CreateDraggableMenu() {
-    std::shared_ptr<UIDraggable> menu;
-    menu = std::make_shared<UIDraggable>();
-	UIContainers.push_back(menu);
-    return menu;
 }
 
 
