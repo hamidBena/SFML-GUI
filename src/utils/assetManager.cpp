@@ -1,12 +1,13 @@
-#include "utils/assetManager.hpp"
+#include "utils/AssetManager.hpp"
 #include <iostream>
-// Locate assets/ at static init time
+
+// Static asset directory path initialization
 fs::path AssetManager::asset_dir = [] {
     fs::path current = env::exe_dir();
     while (!current.empty()) {
         fs::path try_path = current / "assets";
         if (fs::exists(try_path) && fs::is_directory(try_path)) {
-			std::cout <<try_path << '\n';
+            std::cout << try_path << '\n';
             return try_path;
         }
         current = current.parent_path();
@@ -18,6 +19,8 @@ AssetManager& AssetManager::get() {
     static AssetManager instance;
     return instance;
 }
+
+AssetManager::AssetManager() = default;
 
 sf::Texture& AssetManager::getTexture(const std::string& filename) {
     auto it = textures.find(filename);

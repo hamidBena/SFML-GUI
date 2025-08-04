@@ -21,7 +21,7 @@ public:
     AssetManager& operator=(const AssetManager&) = delete;
 
 private:
-    AssetManager() = default;
+    AssetManager();
 
     std::unordered_map<std::string, std::unique_ptr<sf::Texture>> textures;
     std::unordered_map<std::string, std::unique_ptr<sf::Font>> fonts;
