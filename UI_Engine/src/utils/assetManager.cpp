@@ -1,4 +1,4 @@
-#include "UILibrary/assetManager.hpp"
+#include "utils/assetManager.hpp"
 #include <iostream>
 // Locate assets/ at static init time
 fs::path AssetManager::asset_dir = [] {
